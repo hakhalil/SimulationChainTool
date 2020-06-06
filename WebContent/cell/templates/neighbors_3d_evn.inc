@@ -1,0 +1,5 @@
+neighbors :                      id(0,-2,0)
+neighbors :           id(-1,-1,0) id(0,-1,0) id(1,-1,0)
+neighbors : id(-2,0,0) id(-1,0,0)  id(0,0,0)  id(1,0,0)  id(2,0,0)
+neighbors :           id(-1,1,0)  id(0,1,0)  id(1,1,0)
+neighbors :                      id(0,2,0)
