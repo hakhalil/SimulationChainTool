@@ -20,7 +20,7 @@ import org.restlet.resource.Representation;
 
 public class RiseClient {
 
-	public void PostZipFile(String loginUsername, String loginPassword, String frameworkName, final String filename) {
+	public int PostZipFile(String loginUsername, String loginPassword, String frameworkName, final String filename) {
 		OutputRepresentation outfile = new OutputRepresentation(MediaType.APPLICATION_ZIP) {
 			public void write(OutputStream stream) throws IOException {
 				byte[] outfile = getBytesFromFile(new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() +"/"+filename+".zip"));
@@ -33,10 +33,13 @@ public class RiseClient {
 		Response resp = (new Client(Protocol.HTTP)).handle(request);
 		System.out.println(resp.getStatus());
 		System.out.println(resp.getEntity());
+		int retVal = resp.getStatus().getCode();
+		return retVal;
 	}
 
-	public void PutXMLFile(String loginUsername, String loginPassword, String frameworkName, String filename) {
+	public int PutXMLFile(String loginUsername, String loginPassword, String frameworkName, String filename) {
 		File file = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+filename+".xml");
+		int retVal = 200;
 		if (file.exists()) {
 			FileRepresentation outfile = new FileRepresentation(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+filename+".xml", MediaType.TEXT_XML);
 			String uri = "http://134.117.62.118:8080/cdpp/sim/workspaces/" + frameworkName;
@@ -45,24 +48,30 @@ public class RiseClient {
 			Response resp = (new Client(Protocol.HTTP)).handle(request);
 			System.out.println(resp.getStatus());
 			System.out.println(resp.getEntity());
+			retVal = resp.getStatus().getCode();
 		} else {
 			System.out.println("Couldn't find file " + file.getName());
 		}
+		return retVal;
 	}
 	
-	 public  void PutFramework(String loginUsername, String loginPassword, String frameworkName) {
+	 public  int PutFramework(String loginUsername, String loginPassword, String frameworkName) {
 		    String uri = "http://134.117.62.118:8080/cdpp/sim/workspaces/" + frameworkName;
 		    Request request = getAuthenticatedRequest(Method.PUT, uri, loginUsername, loginPassword);
 		    Response resp = (new Client(Protocol.HTTP)).handle(request);
 		    System.out.println(resp.getStatus());
 		    System.out.println(resp.getEntity());
+		    int retVal = resp.getStatus().getCode();
+		    return retVal;
 		  }
 
-	 public  void DeleteFramework(String loginUsername, String loginPassword, String frameworkName) {
+	 public  int DeleteFramework(String loginUsername, String loginPassword, String frameworkName) {
 		    String uri = "http://134.117.62.118:8080/cdpp/sim/workspaces/" + frameworkName;
 		    Request request = getAuthenticatedRequest(Method.DELETE, uri, loginUsername, loginPassword);
 		    Response resp = (new Client(Protocol.HTTP)).handle(request);
+		    int retVal = resp.getStatus().getCode();
 		    System.out.println(resp.getStatus() + " : " + resp.getLocationRef());
+		    return retVal;
 		  }
 	public byte[] getBytesFromFile(File file) throws IOException {
 		InputStream is = new FileInputStream(file);

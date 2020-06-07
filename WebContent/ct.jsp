@@ -20,8 +20,16 @@
 		<h2 style="padding-center: 0px;">
 			Rise wil be used for simulation
 		</h2>
-		<form id="simulate" action="simulate" method="post">
+		<form name="theform" id="simulate" action="simulate" method="post">
+			<script>
+			function changDest(towhere) {
+				alert(towhere);
+				document.forms[0].action = towhere;
+			    document.forms[0].submit();
+			}
+			</script>
 			<%
+			String ct = "start.jsp";
 			String wrongFile = (String) request.getAttribute("NotGen");
 			if(wrongFile != null && !wrongFile.equals("0")){
 			%>
@@ -30,10 +38,10 @@
 			 <table>
 			 	<tr>
 			 		<td>
-			 			<input class="btn-get-started" type="submit" value="Try again" />
+			 			<input class="btn-get-started" type="submit" value="Try again"/>
 			 		</td>
 			 		<td>
-			 			<input class="btn-get-started" type="submit" value="Regenerate" />
+			 			<input class="btn-get-started" type="button" value="Regenerate" onclick="changDest('start.jsp')"/>
 			 		</td>
 			 	</tr>
 			 </table>
@@ -50,13 +58,5 @@
 			Department of Systems and Computer Engineering, Carleton University, Ottawa, Canada</p>
 		</div>
 	</div>
-	<script>
-	function changeCourseOfActoin(towhere) {
-		alert(towhere);
-		document.getElementById("form_id").action = towhere;
-		document.forms["theform"].submit();
-	}
-	</script>
-
 </body>
 </html>

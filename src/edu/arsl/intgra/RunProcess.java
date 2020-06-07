@@ -32,7 +32,7 @@ public class RunProcess {
 		return returnVal;
 	}
 	
-	public static void callRISE() {
+	public static boolean callRISE() {
 		RiseClient client = new RiseClient();
 		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
 		String usrName = "test";
@@ -41,8 +41,12 @@ public class RunProcess {
 		//first delete previous framework
 		client.DeleteFramework(usrName, passWd, framework);
 		
-		client.PutXMLFile(usrName, passWd, framework, fileName);
-		client.PostZipFile(usrName, passWd, framework+"?zdir=n", fileName);
-		client.PutFramework(usrName, passWd, framework+"/simulation");
+		int retVal = client.PutXMLFile(usrName, passWd, framework, fileName);
+		if(retVal >= 200 && retVal <=202) {
+			retVal = client.PostZipFile(usrName, passWd, framework+"?zdir=in", fileName);
+			if(retVal >= 200 && retVal <=202)
+				retVal = client.PutFramework(usrName, passWd, framework+"/simulation");
+		}
+		return (retVal >= 200 && retVal <=202);
 	}
 }

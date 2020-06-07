@@ -46,8 +46,9 @@ public class Simulate extends HttpServlet {
 		try {
 			zipModel(inputName, outputName);
 			prepareRiseXML(outputName);
-			RunProcess.callRISE();
-			request.setAttribute("NotGen", "0");
+			if(RunProcess.callRISE()) {
+				request.setAttribute("NotGen", "0");
+			} else throw new Exception("RISE did not work");
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -58,20 +59,21 @@ public class Simulate extends HttpServlet {
 	}
 
 	private boolean zipModel(String inputName, String outputName) throws Exception {
+		
 		File generatedDir = new File(outputName);
+		
+		//the output of the generation tool must exist before we attempt to zip it
 		if(generatedDir.exists() && generatedDir.isDirectory() && 
 				generatedDir.list() != null && generatedDir.list().length > 0) {
 			String zipFileName = inputName +".zip";
-			ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(zipFileName));
-			FileManagement.addFolderToZip(generatedDir, zip, outputName+"/");
-			zip.close();
+			FileManagement.compress(outputName, zipFileName);
 			return true;
 		}
 		else return false;
 	}
 	
 	private void prepareRiseXML(String outputName) throws Exception{
-		String dimClause = FileManagement.readDimFromMake(outputName);
+		String dimClause = null;//FileManagement.readDimFromMake(outputName);
 		FileManagement.editXML(dimClause);
 	}
 }

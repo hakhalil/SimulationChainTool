@@ -1,5 +1,6 @@
 package edu.arsl.intgra;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,6 +9,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -18,15 +22,14 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.monitor.FileEntry;
 import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  * Class to handle all file system operations
@@ -154,8 +157,19 @@ public class FileManagement {
 			} else {
 				String name = file.getAbsolutePath().substring(baseName.length());
 				ZipEntry zipEntry = new ZipEntry(name);
+			///	zipEntry.setSize(file.length());
+				//long csize = (long)(file.length()*0.8);
+//			    CRC32 crc = new CRC32();
+//			      crc.reset();
+//			      FileInputStream is = new FileInputStream(file);
+//			      crc.update(IOUtils.toByteArray(is));
+//			      is.close();
+//			      zipEntry.setCrc(crc.getValue());
+			//	zipEntry.setCompressedSize(csize);
 				zip.putNextEntry(zipEntry);
-				IOUtils.copy(new FileInputStream(file), zip);
+			//	IOUtils.copy(new FileInputStream(file), zip);
+				 byte[] bytes = Files.readAllBytes(Paths.get(file.getPath()));
+	                zip.write(bytes, 0, bytes.length);
 				zip.closeEntry();
 			}
 		}
@@ -185,14 +199,15 @@ public class FileManagement {
 		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
 		Document xmlDocument = builder.parse(new File(xmlFilePath + fileName+".xml"));
 
-		String expression = "ConfigFramework/DCDpp/Servers/Server/Zone";
-		XPath xPath = XPathFactory.newInstance().newXPath();
-		NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
-		Node zone = nodeList.item(0);
-
-		String zoneRange = zone.getTextContent();
-		zoneRange = zoneRange.substring(0, zoneRange.lastIndexOf(".") + 1) + dim;
-		zone.setTextContent(zoneRange);
+		/*
+		 * String expression = "ConfigFramework/DCDpp/Servers/Server/Zone"; XPath xPath
+		 * = XPathFactory.newInstance().newXPath(); NodeList nodeList = (NodeList)
+		 * xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET); Node
+		 * zone = nodeList.item(0);
+		 * 
+		 * String zoneRange = zone.getTextContent(); zoneRange = zoneRange.substring(0,
+		 * zoneRange.lastIndexOf(".") + 1) + dim; zone.setTextContent(zoneRange);
+		 */
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
@@ -202,4 +217,34 @@ public class FileManagement {
 		transformer.transform(domSource, streamResult);
 
 	}
+	 private static String getEntryName(File source, File file) throws IOException {
+	        int index = source.getAbsolutePath().length() + 1;
+	        String path = file.getCanonicalPath();
+
+	        return path.substring(index);
+	    }
+	public static void compress(String dirPath, String zipFileName) throws Exception {
+		File destination = new File(zipFileName);
+		File source = new File(dirPath);
+		OutputStream archiveStream = new FileOutputStream(destination);
+        ArchiveOutputStream archive = new ArchiveStreamFactory().createArchiveOutputStream(ArchiveStreamFactory.ZIP, archiveStream);
+
+        Collection<File> fileList = FileUtils.listFiles(source, null, true);
+
+        for (File file : fileList) {
+            String entryName = getEntryName(source, file);
+            ZipArchiveEntry entry = new ZipArchiveEntry(entryName);
+            archive.putArchiveEntry(entry);
+
+            BufferedInputStream input = new BufferedInputStream(new FileInputStream(file));
+
+            IOUtils.copy(input, archive);
+            input.close();
+            archive.closeArchiveEntry();
+        }
+
+        archive.finish();
+        archiveStream.close();
+    }
 }
+
