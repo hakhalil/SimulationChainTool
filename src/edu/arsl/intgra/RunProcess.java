@@ -39,7 +39,6 @@ public class RunProcess {
 		String passWd = "test";
 		String framework = "test/lopez/IntegratedTool";
 		//first delete previous framework
-		client.DeleteFramework(usrName, passWd, "test/lopez/TheBigD");
 		client.DeleteFramework(usrName, passWd, framework);
 		
 		client.PutXMLFile(usrName, passWd, framework, fileName);
