@@ -4,14 +4,29 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.monitor.FileEntry;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * Class to handle all file system operations
@@ -53,7 +68,7 @@ public class FileManagement {
 
 		// The file has to exist and is a directory (Not just a child file)
 		return (!fileEntry.isExists() || fileEntry.isDirectory());
-		
+
 	}
 
 	/**
@@ -70,12 +85,6 @@ public class FileManagement {
 			String default_folder = PropertiesFile.getInstance().getProperty("default_folder");
 			initializeFolder(default_folder);
 			File localFile = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/" + filedName);
-
-			/*
-			 * OutputStream outputStream = new FileOutputStream(localFile); int b=0;
-			 * while((b = fileContent.read())!=-1) { if(b < 0) b+=256;
-			 * outputStream.write(b); } outputStream.flush(); outputStream.close();
-			 */
 
 			writer(fileContent, localFile);
 
@@ -111,7 +120,7 @@ public class FileManagement {
 		outputStream.close();
 
 	}
-	
+
 	private static void initializeFolder(String folderName) {
 		// The file has to exist and is a directory (Not just a child file)
 		File defaultDir = fullyQualifyFolder(folderName);
@@ -119,36 +128,78 @@ public class FileManagement {
 			defaultDir.mkdir();
 		}
 		File[] files = defaultDir.listFiles();
-		for(int i=0; i<files.length; i++) {
-			if(files[i].isDirectory()) {
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].isDirectory()) {
 				File[] innerFiles = files[i].listFiles();
-				for(int j=0; j<innerFiles.length; j++) {
+				for (int j = 0; j < innerFiles.length; j++) {
 					innerFiles[j].delete();
 				}
 			}
 			files[i].delete();
 		}
 	}
-	
+
 	public static File fullyQualifyFolder(String folderName) {
 		String systemRoot = PropertiesFile.getSystemRoot();
 		File defaultDir = new File(systemRoot + folderName);
-		
+
 		return defaultDir;
 	}
-	
+
 	public static void addFolderToZip(File folder, ZipOutputStream zip, String baseName) throws IOException {
-	    File[] files = folder.listFiles();
-	    for (File file : files) {
-	        if (file.isDirectory()) {
-	            addFolderToZip(file, zip, baseName);
-	        } else {
-	            String name = file.getAbsolutePath().substring(baseName.length());
-	            ZipEntry zipEntry = new ZipEntry(name);
-	            zip.putNextEntry(zipEntry);
-	            IOUtils.copy(new FileInputStream(file), zip);
-	            zip.closeEntry();
-	        }
-	    }
+		File[] files = folder.listFiles();
+		for (File file : files) {
+			if (file.isDirectory()) {
+				addFolderToZip(file, zip, baseName);
+			} else {
+				String name = file.getAbsolutePath().substring(baseName.length());
+				ZipEntry zipEntry = new ZipEntry(name);
+				zip.putNextEntry(zipEntry);
+				IOUtils.copy(new FileInputStream(file), zip);
+				zip.closeEntry();
+			}
+		}
+	}
+
+	public static String readDimFromMake(String outputName) throws Exception {
+		String dim = "(1,1)";
+		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
+		File f = new File(outputName + "/" + fileName + "/" + fileName + ".ma");
+		FileReader reader = new FileReader(f);
+		List<String> lines = IOUtils.readLines(reader);
+		for (String line : lines) {
+			if (line.startsWith("dim")) {
+				dim = line.substring(line.indexOf(":") + 1).trim();
+				break;
+			}
+		}
+		reader.close();
+		return dim;
+	}
+
+	public static void editXML(String dim) throws Exception {
+		String xmlFilePath = PropertiesFile.getSystemRoot();
+
+		DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder builder = builderFactory.newDocumentBuilder();
+		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
+		Document xmlDocument = builder.parse(new File(xmlFilePath + fileName+".xml"));
+
+		String expression = "ConfigFramework/DCDpp/Servers/Server/Zone";
+		XPath xPath = XPathFactory.newInstance().newXPath();
+		NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
+		Node zone = nodeList.item(0);
+
+		String zoneRange = zone.getTextContent();
+		zoneRange = zoneRange.substring(0, zoneRange.lastIndexOf(".") + 1) + dim;
+		zone.setTextContent(zoneRange);
+
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		DOMSource domSource = new DOMSource(xmlDocument);
+		String s = PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+fileName+".xml";
+		StreamResult streamResult = new StreamResult(new File(s));
+		transformer.transform(domSource, streamResult);
+
 	}
 }

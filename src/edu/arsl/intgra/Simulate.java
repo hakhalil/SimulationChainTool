@@ -1,8 +1,9 @@
 package edu.arsl.intgra;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -38,19 +39,40 @@ public class Simulate extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String genDir = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
-		String zipFileName = genDir + PropertiesFile.getInstance().getProperty("default_name")+".zip";
-		File generatedDir = new File(genDir);
+		String inputName = genDir + "/" + PropertiesFile.getInstance().getProperty("input_file_name");
+		String outputName = genDir + "/" + PropertiesFile.getInstance().getProperty("output_file_name");
 		
 		String nextPageURL = "simulation.jsp";
-		if(generatedDir.exists() && generatedDir.isDirectory() && 
-				generatedDir.list() != null && generatedDir.list().length > 0) {
-			ZipFile zipfile = new ZipFile(zipFileName);
+		try {
+			zipModel(inputName, outputName);
+			prepareRiseXML(outputName);
+			RunProcess.callRISE();
 			request.setAttribute("NotGen", "0");
-		} else {
+			
+		} catch (Exception e) {
+			e.printStackTrace();
 			request.setAttribute("NotGen", "1");
 			nextPageURL = "ct.jsp";
 		}
 		request.getRequestDispatcher(nextPageURL).forward(request, response);
 	}
 
+	private boolean zipModel(String inputName, String outputName) throws Exception {
+		File generatedDir = new File(outputName);
+		if(generatedDir.exists() && generatedDir.isDirectory() && 
+				generatedDir.list() != null && generatedDir.list().length > 0) {
+			String zipFileName = inputName +".zip";
+			ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(zipFileName));
+			FileManagement.addFolderToZip(generatedDir, zip, outputName+"/");
+			zip.close();
+			return true;
+		}
+		else return false;
+	}
+	
+	private void prepareRiseXML(String outputName) throws Exception{
+		String dimClause = FileManagement.readDimFromMake(outputName);
+		FileManagement.editXML(dimClause);
+	}
 }
+

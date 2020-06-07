@@ -20,26 +20,26 @@
 		<h2 style="padding-center: 0px;">
 			Rise wil be used for simulation
 		</h2>
-		<form id="simulate"  method="post">
+		<form id="simulate" action="simulate" method="post">
 			<%
 			String wrongFile = (String) request.getAttribute("NotGen");
-			if(wrongFile == null || !wrongFile.equals("0")){
+			if(wrongFile != null && !wrongFile.equals("0")){
 			%>
 			<h4 style="color: red;" style="padding-center: 0px;">No Make File was found</h4>
 			 <BR/>
 			 <table>
 			 	<tr>
 			 		<td>
-			 			<input class="btn-get-started" type="submit" value="Try again" onclick="toWhere('ct.jsp')"/>
+			 			<input class="btn-get-started" type="submit" value="Try again" />
 			 		</td>
 			 		<td>
-			 			<input class="btn-get-started" type="submit" value="Regenerate" onclick="toWhere('start.jsp')"/>
+			 			<input class="btn-get-started" type="submit" value="Regenerate" />
 			 		</td>
 			 	</tr>
 			 </table>
 			<%} else {%>
 				<h4 style="padding-center:0px;">Model (makefile) is being generated</h4>
-				<input class="btn-get-started" type="submit" value="simulate" onclick="toWhere('/simulate')"/>
+				<input class="btn-get-started" type="submit" value="simulate"/>
 			<%} %>
 		</form>
 	</div>
@@ -52,6 +52,7 @@
 	</div>
 	<script>
 	function changeCourseOfActoin(towhere) {
+		alert(towhere);
 		document.getElementById("form_id").action = towhere;
 		document.forms["theform"].submit();
 	}

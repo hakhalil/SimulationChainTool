@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ConfigFramework>
+   <Doc> This model Simulates Carleton Campus. </Doc>
+      <Files>
+	 <File ftype="ma">in.ma</File>
+      </Files>
+   <Options>
+      <TimeOp>00:00:01:000</TimeOp>
+      <OnlyYMsgOP>true</OnlyYMsgOP>
+      <ParsingOp>false</ParsingOp>      
+   </Options>     
+   <DCDpp>
+      <Servers>
+         <Server IP="localhost" PORT="8080">
+	    <Zone>in(0,0)..(1,1)</Zone>
+	 </Server>
+      </Servers>
+   </DCDpp>
+</ConfigFramework>

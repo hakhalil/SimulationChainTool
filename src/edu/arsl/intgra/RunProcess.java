@@ -17,7 +17,7 @@ public class RunProcess {
 			
 			String cellsPath = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
 			//parameters to the script
-			cmdLine += "-i " + cellsPath+"/"+inputFile + " -o " + cellsPath + " -w " + numOfCells;
+			cmdLine += "-i " + cellsPath+"/"+inputFile + " -o " + cellsPath+"/" +PropertiesFile.getInstance().getProperty("output_file_name") + " -w " + numOfCells;
 			try {
 			//	Process process = new ProcessBuilder(cmdLine).start();
 				 Runtime runtime = Runtime.getRuntime();
@@ -30,5 +30,20 @@ public class RunProcess {
 			
 		}
 		return returnVal;
+	}
+	
+	public static void callRISE() {
+		RiseClient client = new RiseClient();
+		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
+		String usrName = "test";
+		String passWd = "test";
+		String framework = "test/lopez/IntegratedTool";
+		//first delete previous framework
+		client.DeleteFramework(usrName, passWd, "test/lopez/TheBigD");
+		client.DeleteFramework(usrName, passWd, framework);
+		
+		client.PutXMLFile(usrName, passWd, framework, fileName);
+		client.PostZipFile(usrName, passWd, framework+"?zdir=n", fileName);
+		client.PutFramework(usrName, passWd, framework+"/simulation");
 	}
 }
