@@ -1,0 +1,41 @@
+
+% No diffusion / CO2 concentration for impermeable structures
+rule : { ~c := $conc; ~ty := $type; } { $conc := -10; } 1000 { $type = -300 }
+
+% Doors represent fixed co2 levels of the rest of the building (large volume compared to small room)
+%rule : { ~c := $conc; ~ty := $type; } { $conc := 500; } 1000 { $type = -400 }
+
+% Windows to the outside have a lower CO2 concentration (anywhere from 300 to 400 ppm)
+rule : { ~c := $conc; ~ty := $type; } { $conc := 400; } 1000 { $type = -500 }
+
+% Ventilation actively removes CO2 at a rate greater than doors or windows. (assumed equivalent to 300 ppm)
+rule : { ~c := $conc; ~ty := $type; } { $conc := 300; } 1000 { $type = -600 }
+
+% Diffusion and switching workstations to be occupied
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5); $counter:= $counter + 1; } 1000 { $type = -700 AND $counter < 30 AND (-1,0)~c > 0 AND (0,-1)~c > 0 AND (0,1)~c > 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5); $counter:= $counter + 1; $type:= -200; } 1000 { $type = -700 AND $counter = 30 AND (-1,0)~c > 0 AND (0,-1)~c > 0 AND (0,1)~c > 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5); } 1000 { $type = -700 AND $counter > 250 AND (-1,0)~c > 0 AND (0,-1)~c > 0 AND (0,1)~c > 0 AND (1,0)~c > 0}
+
+%t00:01:12:000
+% Diffusion between normal air cells 
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5); } 1000 { $type = -100 AND (-1,0)~c > 0 AND (0,-1)~c > 0 AND (0,1)~c > 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/4); } 1000 { $type = -100 AND (-1,0)~c < 0 AND (0,-1)~c > 0 AND (0,1)~c > 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,0)~c + (0,1)~c + (1,0)~c)/4); } 1000 { $type = -100 AND (-1,0)~c > 0 AND (0,-1)~c < 0 AND (0,1)~c > 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,-1)~c + (0,0)~c + (1,0)~c)/4); } 1000 { $type = -100 AND (-1,0)~c > 0 AND (0,-1)~c > 0 AND (0,1)~c < 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c)/4); } 1000 { $type = -100 AND (-1,0)~c > 0 AND (0,-1)~c > 0 AND (0,1)~c > 0 AND (1,0)~c < 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((0,0)~c + (0,1)~c + (1,0)~c)/3); } 1000 { $type = -100 AND (-1,0)~c < 0 AND (0,-1)~c < 0 AND (0,1)~c > 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,-1)~c + (0,0)~c)/3); } 1000 { $type = -100 AND (-1,0)~c > 0 AND (0,-1)~c > 0 AND (0,1)~c < 0 AND (1,0)~c < 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((0,-1)~c + (0,0)~c + (1,0)~c)/3); } 1000 { $type = -100 AND (-1,0)~c < 0 AND (0,-1)~c > 0 AND (0,1)~c < 0 AND (1,0)~c > 0}
+rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,0)~c + (0,1)~c)/3); } 1000 { $type = -100 AND (-1,0)~c > 0 AND (0,-1)~c < 0 AND (0,1)~c > 0 AND (1,0)~c < 0}
+
+
+
+% CO2 sources have their concentration continually increased by 12.16 ppm every 5 seconds. Normal diffusion rule applies.
+rule : { ~c := $conc; ~ty := $type; } { $conc := ((121.6*2) + (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5)); $counter:= $counter + 1; } 5000 { $type = -200 AND $counter < 250}
+rule : { ~c := $conc; ~ty := $type; } { $conc := ((121.6*2) + (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5)); $counter:= $counter + 1; $type := -700; } 5000 { $type = -200 AND $counter = 250}
+
+% Default rule: keep concentration the same if all other rules untrue (should never happen)
+rule : { ~c := $conc; ~ty := $type; } 1000 { t }
+
+
+

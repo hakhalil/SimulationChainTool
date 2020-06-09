@@ -20,8 +20,8 @@
 		<h2 style="padding-center: 0px;">
 			Download Log Files from RISE
 		</h2>
-		<form id="simulate" action="simulate" method="post">
-				<input class="btn-get-started" href="" value="download"/>
+		<form id="simulate" action="simulate" method="get">
+				<input class="btn-get-started" type="submit" value="download"/>
 		</form>
 	</div>
 	</section>

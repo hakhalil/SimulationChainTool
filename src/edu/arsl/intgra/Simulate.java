@@ -1,15 +1,18 @@
 package edu.arsl.intgra;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.zip.ZipOutputStream;
+import java.net.URL;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
 
 /**
  * Servlet implementation class Simulate
@@ -30,8 +33,17 @@ public class Simulate extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		response.getWriter().append("Served at: ").append(request.getContextPath());
+		String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + PropertiesFile.getInstance().getProperty("RISE_frameworkname")+"/results";
+		try (BufferedInputStream in = new BufferedInputStream(new URL(uri).openStream());
+		FileOutputStream fileOutputStream = new FileOutputStream(PropertiesFile.getInstance().getFullyQualifiedGenertorDir()+"/result.zip")) {
+			IOUtils.copy(in, fileOutputStream);
+			in.close();
+			fileOutputStream.flush();
+			fileOutputStream.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		request.getRequestDispatcher( "simulation.jsp").forward(request, response);
 	}
 
 	/**

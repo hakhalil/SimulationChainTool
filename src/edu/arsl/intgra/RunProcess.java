@@ -1,7 +1,8 @@
 package edu.arsl.intgra;
 
 import java.io.File;
-import java.io.IOException;
+
+import org.apache.commons.io.IOUtils;
 
 public class RunProcess {
 	public static int runCDGenerator(int numOfCells) {
@@ -13,18 +14,19 @@ public class RunProcess {
 			String cmdLine = "Python ";
 			
 			//providing the script name to run
-			cmdLine+= PropertiesFile.getSystemRoot()+"cell/cd_generator.py ";
+			cmdLine+= PropertiesFile.getSystemRoot()+"cell/co2_cd_generator.py ";
 			
 			String cellsPath = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
 			//parameters to the script
 			cmdLine += "-i " + cellsPath+"/"+inputFile + " -o " + cellsPath+"/" +PropertiesFile.getInstance().getProperty("output_file_name") + " -w " + numOfCells;
+			cmdLine += " -r "+ PropertiesFile.getSystemRoot()+"cell/co2_rules.txt -bv 500";
 			try {
-			//	Process process = new ProcessBuilder(cmdLine).start();
-				 Runtime runtime = Runtime.getRuntime();
-			        Process process = runtime.exec(cmdLine, null, new File(PropertiesFile.getSystemRoot()+"cell"));
-			        process.getErrorStream();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				Runtime runtime = Runtime.getRuntime();
+		        Process process = runtime.exec(cmdLine, null, new File(PropertiesFile.getSystemRoot()+"cell"));
+		        process.waitFor();
+		        returnVal = process.exitValue();
+		        System.out.println("Python finished with the message - "+IOUtils.toString(process.getErrorStream(), "UTF-8"));
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			
@@ -35,17 +37,16 @@ public class RunProcess {
 	public static boolean callRISE() {
 		RiseClient client = new RiseClient();
 		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
-		String usrName = "test";
-		String passWd = "test";
-		String framework = "test/lopez/IntegratedTool";
-		//first delete previous framework
-		client.DeleteFramework(usrName, passWd, framework);
 		
-		int retVal = client.PutXMLFile(usrName, passWd, framework, fileName);
+		String framework = PropertiesFile.getInstance().getProperty("RISE_frameworkname");
+		//first delete previous framework
+		client.DeleteFramework(framework);
+		
+		int retVal = client.PutXMLFile( framework, fileName);
 		if(retVal >= 200 && retVal <=202) {
-			retVal = client.PostZipFile(usrName, passWd, framework+"?zdir=in", fileName);
+			retVal = client.PostZipFile(framework+"?zdir=in", fileName);
 			if(retVal >= 200 && retVal <=202)
-				retVal = client.PutFramework(usrName, passWd, framework+"/simulation");
+				retVal = client.PutFramework(framework+"/simulation");
 		}
 		return (retVal >= 200 && retVal <=202);
 	}

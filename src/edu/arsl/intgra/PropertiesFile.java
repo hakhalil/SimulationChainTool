@@ -6,7 +6,7 @@ import java.util.Properties;
 /**
  * File to manage the reading/writing of the config file
  * This is a singlton wihtin the system
- * @author Amr
+ * @author Hoda
  *
  */
 public class PropertiesFile {

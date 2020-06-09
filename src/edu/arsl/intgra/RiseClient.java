@@ -20,15 +20,15 @@ import org.restlet.resource.Representation;
 
 public class RiseClient {
 
-	public int PostZipFile(String loginUsername, String loginPassword, String frameworkName, final String filename) {
+	public int PostZipFile( String frameworkName, final String filename) {
 		OutputRepresentation outfile = new OutputRepresentation(MediaType.APPLICATION_ZIP) {
 			public void write(OutputStream stream) throws IOException {
 				byte[] outfile = getBytesFromFile(new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() +"/"+filename+".zip"));
 				stream.write(outfile);
 			}
 		};
-		String uri = "http://134.117.62.118:8080/cdpp/sim/workspaces/" + frameworkName;
-		Request request = getAuthenticatedRequest(Method.POST, uri, loginUsername, loginPassword);
+		String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
+		Request request = getAuthenticatedRequest(Method.POST, uri);
 		request.setEntity((Representation) outfile);
 		Response resp = (new Client(Protocol.HTTP)).handle(request);
 		System.out.println(resp.getStatus());
@@ -37,13 +37,13 @@ public class RiseClient {
 		return retVal;
 	}
 
-	public int PutXMLFile(String loginUsername, String loginPassword, String frameworkName, String filename) {
+	public int PutXMLFile( String frameworkName, String filename) {
 		File file = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+filename+".xml");
 		int retVal = 200;
 		if (file.exists()) {
 			FileRepresentation outfile = new FileRepresentation(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+filename+".xml", MediaType.TEXT_XML);
-			String uri = "http://134.117.62.118:8080/cdpp/sim/workspaces/" + frameworkName;
-			Request request = getAuthenticatedRequest(Method.PUT, uri, loginUsername, loginPassword);
+			String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
+			Request request = getAuthenticatedRequest(Method.PUT, uri);
 			request.setEntity((Representation) outfile);
 			Response resp = (new Client(Protocol.HTTP)).handle(request);
 			System.out.println(resp.getStatus());
@@ -55,9 +55,9 @@ public class RiseClient {
 		return retVal;
 	}
 	
-	 public  int PutFramework(String loginUsername, String loginPassword, String frameworkName) {
-		    String uri = "http://134.117.62.118:8080/cdpp/sim/workspaces/" + frameworkName;
-		    Request request = getAuthenticatedRequest(Method.PUT, uri, loginUsername, loginPassword);
+	 public  int PutFramework( String frameworkName) {
+		    String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
+		    Request request = getAuthenticatedRequest(Method.PUT, uri);
 		    Response resp = (new Client(Protocol.HTTP)).handle(request);
 		    System.out.println(resp.getStatus());
 		    System.out.println(resp.getEntity());
@@ -65,9 +65,9 @@ public class RiseClient {
 		    return retVal;
 		  }
 
-	 public  int DeleteFramework(String loginUsername, String loginPassword, String frameworkName) {
-		    String uri = "http://134.117.62.118:8080/cdpp/sim/workspaces/" + frameworkName;
-		    Request request = getAuthenticatedRequest(Method.DELETE, uri, loginUsername, loginPassword);
+	 public  int DeleteFramework( String frameworkName) {
+		    String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
+		    Request request = getAuthenticatedRequest(Method.DELETE, uri);
 		    Response resp = (new Client(Protocol.HTTP)).handle(request);
 		    int retVal = resp.getStatus().getCode();
 		    System.out.println(resp.getStatus() + " : " + resp.getLocationRef());
@@ -91,9 +91,10 @@ public class RiseClient {
 		return bytes;
 	}
 
-	public Request getAuthenticatedRequest(Method method, String uri, String login, String password) {
+	public Request getAuthenticatedRequest(Method method, String uri) {
 		Request request = new Request(method, uri);
-		request.setChallengeResponse(new ChallengeResponse(ChallengeScheme.HTTP_BASIC, login, password));
+		request.setChallengeResponse(new ChallengeResponse(ChallengeScheme.HTTP_BASIC, PropertiesFile.getInstance().getProperty("RISE_usrname"), 
+					PropertiesFile.getInstance().getProperty("RISE_passwd")));
 		return request;
 	}
 }

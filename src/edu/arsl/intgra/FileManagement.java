@@ -34,7 +34,7 @@ import org.w3c.dom.Document;
 /**
  * Class to handle all file system operations
  * 
- * @author Amr
+ * @author Hoda
  *
  */
 public class FileManagement {
@@ -157,17 +157,7 @@ public class FileManagement {
 			} else {
 				String name = file.getAbsolutePath().substring(baseName.length());
 				ZipEntry zipEntry = new ZipEntry(name);
-			///	zipEntry.setSize(file.length());
-				//long csize = (long)(file.length()*0.8);
-//			    CRC32 crc = new CRC32();
-//			      crc.reset();
-//			      FileInputStream is = new FileInputStream(file);
-//			      crc.update(IOUtils.toByteArray(is));
-//			      is.close();
-//			      zipEntry.setCrc(crc.getValue());
-			//	zipEntry.setCompressedSize(csize);
 				zip.putNextEntry(zipEntry);
-			//	IOUtils.copy(new FileInputStream(file), zip);
 				 byte[] bytes = Files.readAllBytes(Paths.get(file.getPath()));
 	                zip.write(bytes, 0, bytes.length);
 				zip.closeEntry();

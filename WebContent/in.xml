@@ -3,6 +3,7 @@
    <Doc> This model Simulates diffusion of CO2 in closed space. Rooms in Carleton Campus are used as examples. </Doc>
       <Files>
 	 <File ftype="ma">in.ma</File>
+	 <File ftype="stvalues">in.stvalues</File>
       </Files>
    <Options>
       <TimeOp>00:00:02:000</TimeOp>
