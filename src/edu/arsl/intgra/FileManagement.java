@@ -73,7 +73,9 @@ public class FileManagement {
 		FileEntry fileEntry = new FileEntry(defaultDir);
 
 		// The file has to exist and is a directory (Not just a child file)
-		return (!fileEntry.isExists() || fileEntry.isDirectory());
+		boolean exist =fileEntry.isExists();
+		boolean isDir = fileEntry.isDirectory();
+		return (exist && isDir);
 
 	}
 
@@ -135,7 +137,7 @@ public class FileManagement {
 			defaultDir.mkdir();
 		}
 		File[] files = defaultDir.listFiles();
-		for (int i = 0; i < files.length; i++) {
+		for (int i = 0; files != null && i < files.length; i++) {
 			if (files[i].isDirectory()) {
 				File[] innerFiles = files[i].listFiles();
 				for (int j = 0; j < innerFiles.length; j++) {
