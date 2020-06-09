@@ -9,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -23,6 +24,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -114,11 +117,12 @@ public class FileManagement {
 	private static void writer(InputStream inputStream, File outputFile) throws IOException {
 		OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
 
-		byte[] buffer = new byte[16384];
-
-		while (inputStream.read(buffer) != -1) {
-			outputStream.write(buffer);
-		}
+//		byte[] buffer = new byte[16384];
+//
+//		while (inputStream.read(buffer) != -1) {
+//			outputStream.write(buffer);
+//		}
+		IOUtils.copy(inputStream, outputStream);
 		outputStream.flush();
 		outputStream.close();
 
@@ -236,5 +240,68 @@ public class FileManagement {
         archive.finish();
         archiveStream.close();
     }
+	
+	public static void overwritePal() throws Exception{
+		
+		String palFilePath = PropertiesFile.getSystemRoot();
+
+		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
+		File templateFile = new File(palFilePath + "/cell/"+fileName+".pal");
+		
+		File newPal = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir()+"/out/in/"+fileName+".pal");
+		
+		FileInputStream input = new FileInputStream(templateFile);
+		writer(input, newPal);
+	}
+	
+	public static void editStartingValues() {
+		
+	}
+	
+	public static void downloadFile(String uri, String fileName) {
+		
+		try (BufferedInputStream in = new BufferedInputStream(new URL(uri).openStream());
+		FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
+			IOUtils.copy(in, fileOutputStream);
+			in.close();
+			fileOutputStream.flush();
+			fileOutputStream.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void extractZip(String archiveFile, String destinationPath){
+		File targetDir = new File(destinationPath);
+		try ( InputStream is = new FileInputStream(new File(archiveFile));
+				ArchiveInputStream i = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP, is);) {
+		    ArchiveEntry entry = null;
+		    while ((entry = i.getNextEntry()) != null) {
+		        if (!i.canReadEntryData(entry)) {
+		            // log something?
+		            continue;
+		        }
+		        String name = entry.getName();//fileName(targetDir, entry);
+		        File f = new File(targetDir+"/"+name);
+		        if (entry.isDirectory()) {
+//		            if (!f.isDirectory() && !f.mkdirs()) {
+//		                throw new IOException("failed to create directory " + f);
+//		            }
+		        	//ignore dirs
+		        } else {
+//		            File parent = f.getParentFile();
+//		            if (!parent.isDirectory() && !parent.mkdirs()) {
+//		                throw new IOException("failed to create directory " + parent);
+//		            }
+		            try (OutputStream o = Files.newOutputStream(f.toPath())) {
+		                IOUtils.copy(i, o);
+		            }
+		        }
+		    }
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
 

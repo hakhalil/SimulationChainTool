@@ -1,18 +1,13 @@
 package edu.arsl.intgra;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.IOUtils;
 
 /**
  * Servlet implementation class Simulate
@@ -34,15 +29,9 @@ public class Simulate extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + PropertiesFile.getInstance().getProperty("RISE_frameworkname")+"/results";
-		try (BufferedInputStream in = new BufferedInputStream(new URL(uri).openStream());
-		FileOutputStream fileOutputStream = new FileOutputStream(PropertiesFile.getInstance().getFullyQualifiedGenertorDir()+"/result.zip")) {
-			IOUtils.copy(in, fileOutputStream);
-			in.close();
-			fileOutputStream.flush();
-			fileOutputStream.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		String filePath = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
+		FileManagement.downloadFile(uri, filePath+"/result.zip");
+		//FileManagement.extractZip(filePath+"/result.zip", filePath);
 		request.getRequestDispatcher( "simulation.jsp").forward(request, response);
 	}
 
@@ -56,6 +45,7 @@ public class Simulate extends HttpServlet {
 		
 		String nextPageURL = "simulation.jsp";
 		try {
+			massageConversion();
 			zipModel(inputName, outputName);
 			prepareRiseXML(outputName);
 			if(RunProcess.callRISE()) {
@@ -87,6 +77,11 @@ public class Simulate extends HttpServlet {
 	private void prepareRiseXML(String outputName) throws Exception{
 		String dimClause = null;//FileManagement.readDimFromMake(outputName);
 		FileManagement.editXML(dimClause);
+	}
+	
+	private void massageConversion() throws Exception{
+		FileManagement.overwritePal();
+		FileManagement.editStartingValues();
 	}
 }
 
