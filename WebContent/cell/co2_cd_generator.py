@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('-o', '--out_path', type=str, default="out/", help='Output path')
     parser.add_argument('-r', '--rules_file', type=str, default="templates/default_rules.inc",
                         help='File with the rules to include in the main file')
-    parser.add_argument('-t', '--tolerance', type=int, default=10, help='Tolerance when separating background')
+    parser.add_argument('-t', '--tolerance', type=int, default=40, help='Tolerance when separating background')
     parser.add_argument('-w', '--width', type=int, help='Width of the resulting model')
     parser.add_argument('-p', '--padding', type=int,
                         help='Add a padding to the image before generate the Cell-DEVS environment')
@@ -47,12 +47,12 @@ def parse_args():
                         help='Vent dcolor to separate background')
     parser.add_argument('-vgv', '--vent_gvalue', type=int, default= 300, help='Value for ventilation port cells in .val output file')
     parser.add_argument('-vdv', '--vent_dvalue', type=int, default= 300, help='Value for ventilation port cells in .val output file')
-    parser.add_argument('-wc', '--window_color', type=str, default="255, 255, 0	",
+    parser.add_argument('-wc', '--window_color', type=str, default="255, 255, 0",
                         help='Window color to separate background')
     parser.add_argument('-wv', '--window_value', type=int, default= 400, help='Value for window cells in .val output file')
     parser.add_argument('-dc', '--door_color', type=str, default="34, 177, 76",
                         help='Door color to separate background')
-    parser.add_argument('-dv', '--door_value', type=int, default= 500, help='Value for door cells in .val output file')
+    parser.add_argument('-dv', '--door_value', type=int, default= 499, help='Value for door cells in .val output file')
 
     return parser.parse_args()
 
@@ -237,7 +237,7 @@ if __name__ == '__main__':
                     line = "(%d, %d) = %d %d %d\n" % (j, i, vent_dval, -600, -1)
                     out.write(line)
                 elif mat_id[i][j] == window_val:
-                    line = "(%d, %d) = %d %d %d\n" % (j, i, window_val, -700, -1)
+                    line = "(%d, %d) = %d %d %d\n" % (j, i, window_val, -500, -1)
                     out.write(line)
                 elif mat_id[i][j] == door_val:
                     line = "(%d, %d) = %d %d %d\n" % (j, i, door_val, -400, -1)
@@ -271,8 +271,17 @@ if __name__ == '__main__':
     pal_content = ""
     pal_line = "[%d;%d] %d %d %d\n"
 
-    pal_content += pal_line % ((back_val, back_val + 1) + COLOR_BACKGROUND[:3])
+    pal_content += pal_line % ((-1*vent_dval - 1, -1*vent_dval) + COLOR_G_VENT[:3])
+    pal_content += pal_line % ((-1*vent_dval - 1, -1*vent_dval) + COLOR_D_VENT[:3])
+    pal_content += pal_line % ((-1*door_val - 1, -1*door_val) + COLOR_DOOR[:3])
+    pal_content += pal_line % ((-1*window_val - 1, -1*window_val) + COLOR_WINDOW[:3])
+    
+    pal_content += pal_line % ((vent_dval, vent_dval + 1) + COLOR_G_VENT[:3])
+    pal_content += pal_line % ((vent_dval, vent_dval + 1) + COLOR_D_VENT[:3])
+    pal_content += pal_line % ((door_val, door_val + 1) + COLOR_DOOR[:3])
     pal_content += pal_line % ((obst_val, obst_val + 1) + COLOR_OBSTACLE[:3])
-
+    pal_content += pal_line % ((window_val, window_val + 1) + COLOR_WINDOW[:3])
+    pal_content += pal_line % ((back_val, back_val + 1) + COLOR_BACKGROUND[:3])
+    
     with open(os.path.join(args.out_path, args.top_name, args.top_name + ".pal"), "w") as out:
         out.write(pal_content)

@@ -31,8 +31,7 @@ rule : { ~c := $conc; ~ty := $type; } { $conc := (((-1,0)~c + (0,0)~c + (0,1)~c)
 
 
 % CO2 sources have their concentration continually increased by 12.16 ppm every 5 seconds. Normal diffusion rule applies.
-rule : { ~c := $conc; ~ty := $type; } { $conc := ((121.6*2) + (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5)); $counter:= $counter + 1; } 5000 { $type = -200 AND $counter < 250}
-rule : { ~c := $conc; ~ty := $type; } { $conc := ((121.6*2) + (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5)); $counter:= $counter + 1; $type := -700; } 5000 { $type = -200 AND $counter = 250}
+rule : { ~c := $conc; ~ty := $type; } { $conc := ((121.6*2) + (((-1,0)~c + (0,-1)~c + (0,0)~c + (0,1)~c + (1,0)~c)/5)); $counter:= $counter + 1; } 5000 { $type = -200 }
 
 % Default rule: keep concentration the same if all other rules untrue (should never happen)
 rule : { ~c := $conc; ~ty := $type; } 1000 { t }
