@@ -84,7 +84,7 @@ public class Simulate extends HttpServlet {
 		FileManagement.overwritePal();
 		
 		//add occupants
-		//FileManagement.editStartingValues(dimClause, folderName, numberOfOccupants);
+		FileManagement.editStartingValues(dimClause, folderName, numberOfOccupants);
 	}
 	
 
