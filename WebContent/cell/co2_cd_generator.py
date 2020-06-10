@@ -18,7 +18,7 @@ OBSTACLE_ID = 1
 VENT_ID = 2
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Auxiliar script to generate Cell-DEVS environments')
+    parser = argparse.ArgumentParser(description='Auxiliary script to generate Cell-DEVS environments')
 
     parser.add_argument('-i', '--in_file', type=str, required=True, help='Input image')
     parser.add_argument('-c', '--crop', action="store_true", help='Crop image borders if no obstacle detected')
@@ -41,9 +41,10 @@ def parse_args():
                         help='Width of the lines in the image generated with the Revit walls information')
     parser.add_argument('-bv', '--back_value', type=int, default=0, help='Value for background cells in .val output file')
     parser.add_argument('-ov', '--obst_value', type=int, default=-10, help='Value for obstacle cells in .val output file')
+    parser.add_argument('-oc', '--obst_color', type=str, default="0, 0, 0", help='Obstacle color to separate background')
     parser.add_argument('-vg', '--vent_gcolor', type=str, default="255, 0, 0",
                         help='Vent color to separate background')
-    parser.add_argument('-vd', '--vent_dcolor', type=str, default="132, 188, 216	",
+    parser.add_argument('-vd', '--vent_dcolor', type=str, default="153, 217, 234",
                         help='Vent dcolor to separate background')
     parser.add_argument('-vgv', '--vent_gvalue', type=int, default= 300, help='Value for ventilation port cells in .val output file')
     parser.add_argument('-vdv', '--vent_dvalue', type=int, default= 300, help='Value for ventilation port cells in .val output file')
@@ -148,6 +149,7 @@ if __name__ == '__main__':
     vent_dcolor = list(map(int, args.vent_dcolor.split(",")))
     door_color = list(map(int, args.door_color.split(",")))
     window_color = list(map(int, args.window_color.split(",")))
+    obst_color = list(map(int, args.obst_color.split(",")))
 
     if not args.top_name:
         args.top_name = os.path.splitext(os.path.basename(args.in_file))[0]
@@ -218,8 +220,8 @@ if __name__ == '__main__':
                 pixels[i, j] = COLOR_WINDOW 
                 mat_id[-1].append(window_val)
             else:
-                pixels[i, j] = COLOR_OBSTACLE
-                mat_id[-1].append(obst_val)
+              pixels[i, j] = COLOR_OBSTACLE
+              mat_id[-1].append(obst_val)
 
     im_res.save(os.path.join(args.out_path, args.top_name, args.top_name + ".png"))
 
@@ -269,7 +271,7 @@ if __name__ == '__main__':
 
     # Generation of palette file (.pal)
     pal_content = ""
-    pal_line = "[%d;%d] %d %d %d\n"  
+    pal_line = "[%d;%d] %d %d %d\n"
 
     pal_content += pal_line % ((-1*vent_dval - 1, -1*vent_dval) + COLOR_G_VENT[:3])
     pal_content += pal_line % ((-1*vent_dval - 1, -1*vent_dval) + COLOR_D_VENT[:3])
