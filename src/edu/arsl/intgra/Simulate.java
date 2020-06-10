@@ -31,7 +31,7 @@ public class Simulate extends HttpServlet {
 		String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + PropertiesFile.getInstance().getProperty("RISE_frameworkname")+"/results";
 		String filePath = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
 		FileManagement.downloadFile(uri, filePath+"/result.zip");
-		//FileManagement.extractZip(filePath+"/result.zip", filePath);
+		FileManagement.extractZip(filePath+"/result.zip", filePath);
 		request.getRequestDispatcher( "simulation.jsp").forward(request, response);
 	}
 
