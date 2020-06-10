@@ -43,9 +43,10 @@ public class Simulate extends HttpServlet {
 		String folderInZip = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("input_qualifier");
 		String conversionToolOutputFolder = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("output_qualifier");
 		
+		String strOccupants = request.getParameter("occupants");
 		String nextPageURL = "simulation.jsp";
 		try {
-			prepareFilesForRise(conversionToolOutputFolder, 5);
+			prepareFilesForRise(conversionToolOutputFolder, Integer.parseInt(strOccupants));
 			zipModel(folderInZip, conversionToolOutputFolder);
 			
 			if(RunProcess.callRISE()) {

@@ -46,6 +46,10 @@
 			 	</tr>
 			 </table>
 			<%} else {%>
+				<h4>Number of occupants</h4>
+				<input id="occupants" name="occupants" type="text" 	value="5" size="10" /> 
+				<br/> <br/>
+			
 				<h4 style="padding-center:0px;">Model (makefile) is being generated</h4>
 				<input class="btn-get-started" type="submit" value="simulate"/>
 			<%} %>
