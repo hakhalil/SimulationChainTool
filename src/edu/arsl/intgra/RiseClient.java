@@ -23,7 +23,7 @@ public class RiseClient {
 	public int PostZipFile( String frameworkName, final String filename) {
 		OutputRepresentation outfile = new OutputRepresentation(MediaType.APPLICATION_ZIP) {
 			public void write(OutputStream stream) throws IOException {
-				byte[] outfile = getBytesFromFile(new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() +"/"+filename+".zip"));
+				byte[] outfile = getBytesFromFile(new File(PropertiesFile.getInstance().getGenerationFolderWithFullPath() +"/"+filename+".zip"));
 				stream.write(outfile);
 			}
 		};
@@ -38,10 +38,10 @@ public class RiseClient {
 	}
 
 	public int PutXMLFile( String frameworkName, String filename) {
-		File file = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+filename+".xml");
+		File file = new File(PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/"+filename+".xml");
 		int retVal = 200;
 		if (file.exists()) {
-			FileRepresentation outfile = new FileRepresentation(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+filename+".xml", MediaType.TEXT_XML);
+			FileRepresentation outfile = new FileRepresentation(PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/"+filename+".xml", MediaType.TEXT_XML);
 			String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
 			Request request = getAuthenticatedRequest(Method.PUT, uri);
 			request.setEntity((Representation) outfile);

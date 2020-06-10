@@ -29,7 +29,7 @@ public class Simulate extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + PropertiesFile.getInstance().getProperty("RISE_frameworkname")+"/results";
-		String filePath = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
+		String filePath = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
 		FileManagement.downloadFile(uri, filePath+"/result.zip");
 		FileManagement.extractZip(filePath+"/result.zip", filePath);
 		request.getRequestDispatcher( "simulation.jsp").forward(request, response);
@@ -39,15 +39,15 @@ public class Simulate extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String genDir = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
-		String inputName = genDir + "/" + PropertiesFile.getInstance().getProperty("input_file_name");
-		String outputName = genDir + "/" + PropertiesFile.getInstance().getProperty("output_file_name");
+		String genDir = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
+		String inputName = genDir + "/" + PropertiesFile.getInstance().getProperty("input_qualifier");
+		String outputName = genDir + "/" + PropertiesFile.getInstance().getProperty("output_qualifier");
 		
 		String nextPageURL = "simulation.jsp";
 		try {
-			massageConversion();
-			zipModel(inputName, outputName);
 			prepareRiseXML(outputName);
+			zipModel(inputName, outputName);
+			
 			if(RunProcess.callRISE()) {
 				request.setAttribute("NotGen", "0");
 			} else throw new Exception("RISE did not work");
@@ -75,13 +75,12 @@ public class Simulate extends HttpServlet {
 	}
 	
 	private void prepareRiseXML(String outputName) throws Exception{
-		String dimClause = null;//FileManagement.readDimFromMake(outputName);
+		String dimClause = FileManagement.readDimFromMake(outputName);
 		FileManagement.editXML(dimClause);
+		FileManagement.overwritePal();
+		FileManagement.editStartingValues(dimClause);
 	}
 	
-	private void massageConversion() throws Exception{
-		FileManagement.overwritePal();
-		FileManagement.editStartingValues();
-	}
+
 }
 

@@ -16,9 +16,9 @@ public class RunProcess {
 			//providing the script name to run
 			cmdLine+= PropertiesFile.getSystemRoot()+"cell/co2_cd_generator.py ";
 			
-			String cellsPath = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
+			String cellsPath = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
 			//parameters to the script
-			cmdLine += "-i " + cellsPath+"/"+inputFile + " -o " + cellsPath+"/" +PropertiesFile.getInstance().getProperty("output_file_name") + " -w " + numOfCells;
+			cmdLine += "-i " + cellsPath+"/"+inputFile + " -o " + cellsPath+"/" +PropertiesFile.getInstance().getProperty("output_qualifier") + " -w " + numOfCells;
 			cmdLine += " -r "+ PropertiesFile.getSystemRoot()+"cell/co2_rules.txt -bv 500";
 			try {
 				Runtime runtime = Runtime.getRuntime();
@@ -36,7 +36,7 @@ public class RunProcess {
 	
 	public static boolean callRISE() {
 		RiseClient client = new RiseClient();
-		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier");
 		
 		String framework = PropertiesFile.getInstance().getProperty("RISE_frameworkname");
 		//first delete previous framework

@@ -87,7 +87,7 @@ public class FileManagement {
 
 			String default_folder = PropertiesFile.getInstance().getProperty("default_folder");
 			initializeFolder(default_folder);
-			File localFile = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/" + filedName);
+			File localFile = new File(PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/" + filedName);
 
 			writer(fileContent, localFile);
 
@@ -100,11 +100,11 @@ public class FileManagement {
 	}
 
 	public static String getCDInputFileName() {
-		String path = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
+		String path = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
 		File f = new File(path);
 		String[] listOfFiles = f.list();
 		for (int i = 0; i < listOfFiles.length; i++) {
-			if (listOfFiles[i].trim().startsWith(PropertiesFile.getInstance().getProperty("input_file_name")))
+			if (listOfFiles[i].trim().startsWith(PropertiesFile.getInstance().getProperty("input_qualifier")))
 				return listOfFiles[i];
 		}
 
@@ -145,10 +145,12 @@ public class FileManagement {
 		return defaultDir;
 	}
 
-	public static String readDimFromMake(String outputName) throws Exception {
+	public static String readDimFromMake(String generatedDirPath) throws Exception {
 		String dim = "(1,1)";
-		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
-		File f = new File(outputName + "/" + fileName + "/" + fileName + ".ma");
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier");
+		//create a folder with the input qualifier under the output path. This is needed because RISE expects the zip to have a folder
+		//and for this folder we are using the input qualifier
+		File f = new File(generatedDirPath + "/" + fileName + "/" + fileName + ".ma");
 		FileReader reader = new FileReader(f);
 		List<String> lines = IOUtils.readLines(reader);
 		for (String line : lines) {
@@ -166,8 +168,8 @@ public class FileManagement {
 
 		DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = builderFactory.newDocumentBuilder();
-		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
-		Document xmlDocument = builder.parse(new File(xmlFilePath + fileName + ".xml"));
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ ".xml";
+		Document xmlDocument = builder.parse(new File(xmlFilePath + fileName ));
 
 		/*
 		 * String expression = "ConfigFramework/DCDpp/Servers/Server/Zone"; XPath xPath
@@ -182,7 +184,7 @@ public class FileManagement {
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
 		DOMSource domSource = new DOMSource(xmlDocument);
-		String s = PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/" + fileName + ".xml";
+		String s = PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/" + fileName;
 		StreamResult streamResult = new StreamResult(new File(s));
 		transformer.transform(domSource, streamResult);
 
@@ -236,17 +238,17 @@ public class FileManagement {
 
 		String palFilePath = PropertiesFile.getSystemRoot();
 
-		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
-		File templateFile = new File(palFilePath + "/cell/" + fileName + ".pal");
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ ".pal";
+		File templateFile = new File(palFilePath + "/cell/" + fileName );
 
 		File newPal = new File(
-				PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/out/in/" + fileName + ".pal");
+				PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/out/in/" + fileName );
 
 		FileInputStream input = new FileInputStream(templateFile);
 		writer(input, newPal);
 	}
 
-	public static void editStartingValues() {
+	public static void editStartingValues(String dimClause) {
 
 	}
 

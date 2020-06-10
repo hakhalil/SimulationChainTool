@@ -104,10 +104,11 @@ public class UserInputServlet extends HttpServlet {
 		if (validType) {
 			try {
 
-				String genFileName = PropertiesFile.getInstance().getProperty("input_file_name");
+				String fileNameOnServer = PropertiesFile.getInstance().getProperty("input_qualifier");
 
 				InputStream fileContent = filePart.getInputStream();
-				FileManagement.writeFile(genFileName + fileName.substring(fileName.length() - 4, fileName.length()), fileContent);
+				//rename the file name on server to use the input qualifier but keep the extension
+				FileManagement.writeFile(fileNameOnServer + fileName.substring(fileName.length() - 4, fileName.length()), fileContent);
 				returnValue = true;
 			} catch (Exception e) {
 				e.printStackTrace();
