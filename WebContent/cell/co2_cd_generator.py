@@ -269,7 +269,7 @@ if __name__ == '__main__':
 
     # Generation of palette file (.pal)
     pal_content = ""
-    pal_line = "[%d;%d] %d %d %d\n"
+    pal_line = "[%d;%d] %d %d %d\n"  
 
     pal_content += pal_line % ((-1*vent_dval - 1, -1*vent_dval) + COLOR_G_VENT[:3])
     pal_content += pal_line % ((-1*vent_dval - 1, -1*vent_dval) + COLOR_D_VENT[:3])
