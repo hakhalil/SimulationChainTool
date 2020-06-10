@@ -44,9 +44,10 @@ public class Simulate extends HttpServlet {
 		String conversionToolOutputFolder = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("output_qualifier");
 		
 		String strOccupants = request.getParameter("occupants");
+		String closeWindow = request.getParameter("closed");
 		String nextPageURL = "simulation.jsp";
 		try {
-			prepareFilesForRise(conversionToolOutputFolder, Integer.parseInt(strOccupants));
+			prepareFilesForRise(conversionToolOutputFolder, Integer.parseInt(strOccupants), closeWindow);
 			zipModel(folderInZip, conversionToolOutputFolder);
 			
 			if(RunProcess.callRISE()) {
@@ -75,8 +76,9 @@ public class Simulate extends HttpServlet {
 		else return false;
 	}
 	
-	private void prepareFilesForRise(String folderName, int numberOfOccupants) throws Exception{
-		String dimClause = FileManagement.readDimFromMake(folderName);
+	private void prepareFilesForRise(String folderName, int numberOfOccupants, String closeWindow) throws Exception{
+		boolean isWindowClosed = (closeWindow!= null) && (closeWindow.equals("on"));
+		String dimClause = FileManagement.manipluateMakeFile(folderName, isWindowClosed);
 		
 		//add dimensions, as per make file, to the XML template file and add the update file to the output folder
 		FileManagement.editXML(dimClause);

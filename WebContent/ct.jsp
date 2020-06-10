@@ -46,8 +46,18 @@
 			 	</tr>
 			 </table>
 			<%} else {%>
-				<h4>Number of occupants</h4>
-				<input id="occupants" name="occupants" type="text" 	value="5" size="10" /> 
+				<table>
+					<tr>
+						<td align="left" >
+							<h3>Number of occupants</h3><input id="occupants" name="occupants" type="text" 	value="5" size="10" />
+						</td>
+					</tr>
+					<tr>
+						<td align="left">
+							<h3>Windows Closed?</h3><input type="checkbox" id="closed" name="closed" />
+						</td>
+					</tr>
+				</table>
 				<br/> <br/>
 			
 				<h4 style="padding-center:0px;">Model (makefile) is being generated</h4>

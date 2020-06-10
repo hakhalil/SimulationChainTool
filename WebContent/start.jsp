@@ -32,10 +32,10 @@
 		<%	} %>
 		<form name="theform" action="userInputServlet" method="post" enctype="multipart/form-data">
 		
-			<h3 style="padding-center: 0px;">Upload a Revit or Image file:</h3>
+			<h4 style="padding-center: 0px;">Upload a Revit or Image file:</h4>
 			<input  class="btn-get-started" type="file" name="file" size="50" />
 	
-			<h3>Room width (in meters)</h3>
+			<h4>Room width (in meters)</h4>
 			<input id="rmWidth" name="rmWidth" type="text" 	value="0" size="10" /> 
 			<br/> <br/>
 			<input type="button" class="btn-get-started" value="Generate" onclick="validate()" />

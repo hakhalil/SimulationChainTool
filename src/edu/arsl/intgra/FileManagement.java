@@ -5,7 +5,6 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,7 +29,6 @@ import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.monitor.FileEntry;
 import org.w3c.dom.Document;
 
 /**
@@ -69,10 +67,9 @@ public class FileManagement {
 	static boolean checkFolder(String folderName) {
 
 		File defaultDir = fullyQualifyFolder(folderName);
-		FileEntry fileEntry = new FileEntry(defaultDir);
 
 		// The file has to exist and is a directory (Not just a child file)
-		return (fileEntry.isExists() && fileEntry.isDirectory());
+		return (defaultDir.exists() && defaultDir.isDirectory());
 
 	}
 
@@ -122,22 +119,24 @@ public class FileManagement {
 
 	}
 
+	private static void deleteFolderRecursively(File file) {
+		if(!file.isDirectory()) {
+			file.delete();
+		} else {
+			File[] files = file.listFiles();
+			for (int i = 0; files != null && i < files.length; i++) {
+				deleteFolderRecursively(files[i]);
+				files[i].delete();
+			}
+		}
+	}
 	private static void initializeFolder(String folderName) {
 		// The file has to exist and is a directory (Not just a child file)
 		File defaultDir = fullyQualifyFolder(folderName);
 		if (!checkFolder(folderName)) {
 			defaultDir.mkdir();
-		}
-		File[] files = defaultDir.listFiles();
-		for (int i = 0; files != null && i < files.length; i++) {
-			if (files[i].isDirectory()) {
-				File[] innerFiles = files[i].listFiles();
-				for (int j = 0; j < innerFiles.length; j++) {
-					innerFiles[j].delete();
-				}
-			}
-			files[i].delete();
-		}
+		} else
+			deleteFolderRecursively(defaultDir);
 	}
 
 	public static File fullyQualifyFolder(String folderName) {
@@ -147,24 +146,44 @@ public class FileManagement {
 		return defaultDir;
 	}
 
-	public static String readDimFromMake(String folderName) throws Exception {
+	/**
+	 * Read the dimensions of the model as well as change the status of the windows if required
+	 * @param folderName
+	 * @return
+	 * @throws Exception
+	 */
+	public static String manipluateMakeFile(String folderName, boolean closeWindow) throws Exception {
 		String dim = "(1,1)";
 		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier");
+		
 		//create a folder with the input qualifier under the output path. This is needed because RISE expects the zip to have a folder
 		//and for this folder we are using the input qualifier
 		File f = new File(folderName + "/" + fileName + "/" + fileName + ".ma");
-		FileReader reader = new FileReader(f);
-		List<String> lines = IOUtils.readLines(reader);
+				
+		List<String> lines = IOUtils.readLines(new FileInputStream(f), "CP1252");
+		
+		FileOutputStream os = new FileOutputStream(f);
 		for (String line : lines) {
 			if (line.startsWith("dim")) {
 				dim = line.substring(line.indexOf(":") + 1).trim();
-				break;
+				//break;
+			}
+			if(!line.endsWith("{ $type = -500 }") || !closeWindow){
+				os.write(line.getBytes());
+				os.write("\r\n".getBytes());
 			}
 		}
-		reader.close();
+		//reader.close();
+		os.close();
 		return dim;
 	}
 
+	/**
+	 * For CDPP simulations, we need to add the model dimension to the XML provided to RISE
+	 * In all cases, the template XML must be written to the generation folder
+	 * @param dim
+	 * @throws Exception
+	 */
 	public static void editXML(String dim) throws Exception {
 		String xmlFilePath = PropertiesFile.getSystemRoot();
 
