@@ -1,5 +1,5 @@
 
-% No diffusion / CO2 concentration for impermeable structures
+% No diffusion / CO2 concentration for impermeable structures 
 rule : { ~c := $conc; ~ty := $type; } { $conc := -10; } 1000 { $type = -300 }
 
 % Doors represent fixed co2 levels of the rest of the building (large volume compared to small room)
