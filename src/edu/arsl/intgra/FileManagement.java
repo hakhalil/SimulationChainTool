@@ -11,11 +11,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -73,9 +70,7 @@ public class FileManagement {
 		FileEntry fileEntry = new FileEntry(defaultDir);
 
 		// The file has to exist and is a directory (Not just a child file)
-		boolean exist =fileEntry.isExists();
-		boolean isDir = fileEntry.isDirectory();
-		return (exist && isDir);
+		return (fileEntry.isExists() && fileEntry.isDirectory());
 
 	}
 
@@ -92,7 +87,7 @@ public class FileManagement {
 
 			String default_folder = PropertiesFile.getInstance().getProperty("default_folder");
 			initializeFolder(default_folder);
-			File localFile = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/" + filedName);
+			File localFile = new File(PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/" + filedName);
 
 			writer(fileContent, localFile);
 
@@ -105,11 +100,11 @@ public class FileManagement {
 	}
 
 	public static String getCDInputFileName() {
-		String path = PropertiesFile.getInstance().getFullyQualifiedGenertorDir();
+		String path = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
 		File f = new File(path);
 		String[] listOfFiles = f.list();
 		for (int i = 0; i < listOfFiles.length; i++) {
-			if (listOfFiles[i].trim().startsWith(PropertiesFile.getInstance().getProperty("input_file_name")))
+			if (listOfFiles[i].trim().startsWith(PropertiesFile.getInstance().getProperty("input_qualifier")))
 				return listOfFiles[i];
 		}
 
@@ -119,11 +114,6 @@ public class FileManagement {
 	private static void writer(InputStream inputStream, File outputFile) throws IOException {
 		OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
 
-//		byte[] buffer = new byte[16384];
-//
-//		while (inputStream.read(buffer) != -1) {
-//			outputStream.write(buffer);
-//		}
 		IOUtils.copy(inputStream, outputStream);
 		outputStream.flush();
 		outputStream.close();
@@ -155,26 +145,12 @@ public class FileManagement {
 		return defaultDir;
 	}
 
-	public static void addFolderToZip(File folder, ZipOutputStream zip, String baseName) throws IOException {
-		File[] files = folder.listFiles();
-		for (File file : files) {
-			if (file.isDirectory()) {
-				addFolderToZip(file, zip, baseName);
-			} else {
-				String name = file.getAbsolutePath().substring(baseName.length());
-				ZipEntry zipEntry = new ZipEntry(name);
-				zip.putNextEntry(zipEntry);
-				 byte[] bytes = Files.readAllBytes(Paths.get(file.getPath()));
-	                zip.write(bytes, 0, bytes.length);
-				zip.closeEntry();
-			}
-		}
-	}
-
-	public static String readDimFromMake(String outputName) throws Exception {
+	public static String readDimFromMake(String generatedDirPath) throws Exception {
 		String dim = "(1,1)";
-		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
-		File f = new File(outputName + "/" + fileName + "/" + fileName + ".ma");
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier");
+		//create a folder with the input qualifier under the output path. This is needed because RISE expects the zip to have a folder
+		//and for this folder we are using the input qualifier
+		File f = new File(generatedDirPath + "/" + fileName + "/" + fileName + ".ma");
 		FileReader reader = new FileReader(f);
 		List<String> lines = IOUtils.readLines(reader);
 		for (String line : lines) {
@@ -192,8 +168,8 @@ public class FileManagement {
 
 		DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = builderFactory.newDocumentBuilder();
-		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
-		Document xmlDocument = builder.parse(new File(xmlFilePath + fileName+".xml"));
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ ".xml";
+		Document xmlDocument = builder.parse(new File(xmlFilePath + fileName ));
 
 		/*
 		 * String expression = "ConfigFramework/DCDpp/Servers/Server/Zone"; XPath xPath
@@ -208,62 +184,83 @@ public class FileManagement {
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
 		DOMSource domSource = new DOMSource(xmlDocument);
-		String s = PropertiesFile.getInstance().getFullyQualifiedGenertorDir() + "/"+fileName+".xml";
+		String s = PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/" + fileName;
 		StreamResult streamResult = new StreamResult(new File(s));
 		transformer.transform(domSource, streamResult);
 
 	}
-	 private static String getEntryName(File source, File file) throws IOException {
-	        int index = source.getAbsolutePath().length() + 1;
-	        String path = file.getCanonicalPath();
 
-	        return path.substring(index);
-	    }
+	private static String getEntryName(File source, File file) throws IOException {
+		int index = source.getAbsolutePath().length() + 1;
+		String path = file.getCanonicalPath();
+
+		return path.substring(index);
+	}
+
+	/** 
+	 * Adds the fodler <c>dirPath</c> and all its children to the zip <c>zipFileName</c>
+	 * @param dirPath
+	 * @param zipFileName
+	 * @throws Exception
+	 */
 	public static void compress(String dirPath, String zipFileName) throws Exception {
 		File destination = new File(zipFileName);
 		File source = new File(dirPath);
 		OutputStream archiveStream = new FileOutputStream(destination);
-        ArchiveOutputStream archive = new ArchiveStreamFactory().createArchiveOutputStream(ArchiveStreamFactory.ZIP, archiveStream);
+		ArchiveOutputStream archive = new ArchiveStreamFactory().createArchiveOutputStream(ArchiveStreamFactory.ZIP,
+				archiveStream);
 
-        Collection<File> fileList = FileUtils.listFiles(source, null, true);
+		Collection<File> fileList = FileUtils.listFiles(source, null, true);
 
-        for (File file : fileList) {
-            String entryName = getEntryName(source, file);
-            ZipArchiveEntry entry = new ZipArchiveEntry(entryName);
-            archive.putArchiveEntry(entry);
+		//loop through all files and add them one by one to the archive
+		for (File file : fileList) {
+			String entryName = getEntryName(source, file);
+			ZipArchiveEntry entry = new ZipArchiveEntry(entryName);
+			archive.putArchiveEntry(entry);
 
-            BufferedInputStream input = new BufferedInputStream(new FileInputStream(file));
+			BufferedInputStream input = new BufferedInputStream(new FileInputStream(file));
 
-            IOUtils.copy(input, archive);
-            input.close();
-            archive.closeArchiveEntry();
-        }
+			IOUtils.copy(input, archive);
+			input.close();
+			archive.closeArchiveEntry();
+		}
 
-        archive.finish();
-        archiveStream.close();
-    }
-	
-	public static void overwritePal() throws Exception{
-		
+		archive.finish();
+		archiveStream.close();
+	}
+
+	/**
+	 * The generation tool outputs a palette which does not account to vents, doors or windows. 
+	 * Since the palette is constant, we overwrite the generated output with a templated one
+	 * @throws Exception
+	 */
+	public static void overwritePal() throws Exception {
+
 		String palFilePath = PropertiesFile.getSystemRoot();
 
-		String fileName = PropertiesFile.getInstance().getProperty("input_file_name");
-		File templateFile = new File(palFilePath + "/cell/"+fileName+".pal");
-		
-		File newPal = new File(PropertiesFile.getInstance().getFullyQualifiedGenertorDir()+"/out/in/"+fileName+".pal");
-		
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ ".pal";
+		File templateFile = new File(palFilePath + "/cell/" + fileName );
+
+		File newPal = new File(
+				PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/out/in/" + fileName );
+
 		FileInputStream input = new FileInputStream(templateFile);
 		writer(input, newPal);
 	}
-	
-	public static void editStartingValues() {
-		
+
+	public static void editStartingValues(String dimClause) {
+
 	}
-	
+
+	/**
+	 * Downloads a file from a given URI
+	 * @param uri
+	 * @param fileName
+	 */
 	public static void downloadFile(String uri, String fileName) {
-		
+
 		try (BufferedInputStream in = new BufferedInputStream(new URL(uri).openStream());
-		FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
+				FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
 			IOUtils.copy(in, fileOutputStream);
 			in.close();
 			fileOutputStream.flush();
@@ -272,38 +269,45 @@ public class FileManagement {
 			e.printStackTrace();
 		}
 	}
-	
-	public static void extractZip(String archiveFile, String destinationPath){
+
+	/**
+	 * Extracting content of a zip archive to the current location
+	 * @param archiveFile
+	 * @param destinationPath
+	 */
+	public static void extractZip(String archiveFile, String destinationPath) {
 		File targetDir = new File(destinationPath);
-		try ( InputStream is = new FileInputStream(new File(archiveFile));
-				ArchiveInputStream i = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP, is);) {
-		    ArchiveEntry entry = null;
-		    while ((entry = i.getNextEntry()) != null) {
-		        if (!i.canReadEntryData(entry)) {
-		            // log something?
-		            continue;
-		        }
-		        String name = entry.getName();//fileName(targetDir, entry);
-		        File f = new File(targetDir+"/"+name);
-		        if (entry.isDirectory()) {
-//		            if (!f.isDirectory() && !f.mkdirs()) {
-//		                throw new IOException("failed to create directory " + f);
-//		            }
-		        	//ignore dirs
-		        } else {
-//		            File parent = f.getParentFile();
-//		            if (!parent.isDirectory() && !parent.mkdirs()) {
-//		                throw new IOException("failed to create directory " + parent);
-//		            }
-		            try (OutputStream o = Files.newOutputStream(f.toPath())) {
-		                IOUtils.copy(i, o);
-		            }
-		        }
-		    }
-		}
-		catch (Exception e) {
+		try (InputStream is = new FileInputStream(new File(archiveFile));
+				ArchiveInputStream i = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP,
+						is);) {
+			ArchiveEntry entry = null;
+			while ((entry = i.getNextEntry()) != null) {
+				if (!i.canReadEntryData(entry)) {
+					System.out.println("entry cannot be read!!");
+					continue;
+				}
+				
+				
+				if (entry.isDirectory()) {
+					// ignore dirs
+				} else {
+					//no point in unzipping empty files
+					if(entry.getSize() > 0) {
+						String name = entry.getName();
+						//in case the file was a child to a folder, we remove the parent name
+						if(name.lastIndexOf("/")!=-1) {
+							name = name.substring(name.lastIndexOf("/")+1);
+						}
+						
+						File f = new File(targetDir + "/" + name);
+						OutputStream o = Files.newOutputStream(f.toPath());
+						IOUtils.copy(i, o);
+						o.close();
+					}
+				}
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 }
-

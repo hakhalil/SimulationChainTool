@@ -62,7 +62,7 @@ public class PropertiesFile {
 		return (properties != null) ? properties.getProperty(name) : null;
 	}
 	
-	public String getFullyQualifiedGenertorDir() {
+	public String getGenerationFolderWithFullPath() {
 		return PropertiesFile.getSystemRoot()+PropertiesFile.getInstance().getProperty("default_folder");
 	}
 }
