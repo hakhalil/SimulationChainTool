@@ -39,14 +39,14 @@ public class Simulate extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String genDir = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
-		String inputName = genDir + "/" + PropertiesFile.getInstance().getProperty("input_qualifier");
-		String outputName = genDir + "/" + PropertiesFile.getInstance().getProperty("output_qualifier");
+		String rootFolderForGeneratedFiles = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
+		String folderInZip = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("input_qualifier");
+		String conversionToolOutputFolder = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("output_qualifier");
 		
 		String nextPageURL = "simulation.jsp";
 		try {
-			prepareRiseXML(outputName);
-			zipModel(inputName, outputName);
+			prepareFilesForRise(conversionToolOutputFolder, 5);
+			zipModel(folderInZip, conversionToolOutputFolder);
 			
 			if(RunProcess.callRISE()) {
 				request.setAttribute("NotGen", "0");
@@ -60,25 +60,31 @@ public class Simulate extends HttpServlet {
 		request.getRequestDispatcher(nextPageURL).forward(request, response);
 	}
 
-	private boolean zipModel(String inputName, String outputName) throws Exception {
+	private boolean zipModel(String zipFileBaseName, String outputFolder) throws Exception {
 		
-		File generatedDir = new File(outputName);
+		File generatedDir = new File(outputFolder);
 		
 		//the output of the generation tool must exist before we attempt to zip it
 		if(generatedDir.exists() && generatedDir.isDirectory() && 
 				generatedDir.list() != null && generatedDir.list().length > 0) {
-			String zipFileName = inputName +".zip";
-			FileManagement.compress(outputName, zipFileName);
+			String zipFileName = zipFileBaseName +".zip";
+			FileManagement.compress(outputFolder, zipFileName);
 			return true;
 		}
 		else return false;
 	}
 	
-	private void prepareRiseXML(String outputName) throws Exception{
-		String dimClause = FileManagement.readDimFromMake(outputName);
+	private void prepareFilesForRise(String folderName, int numberOfOccupants) throws Exception{
+		String dimClause = FileManagement.readDimFromMake(folderName);
+		
+		//add dimensions, as per make file, to the XML template file and add the update file to the output folder
 		FileManagement.editXML(dimClause);
+		
+		//generated Pal is not complete we overwrite with a templated pal
 		FileManagement.overwritePal();
-		FileManagement.editStartingValues(dimClause);
+		
+		//add occupants
+		//FileManagement.editStartingValues(dimClause, folderName, numberOfOccupants);
 	}
 	
 

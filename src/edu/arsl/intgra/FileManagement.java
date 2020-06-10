@@ -12,7 +12,9 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -145,12 +147,12 @@ public class FileManagement {
 		return defaultDir;
 	}
 
-	public static String readDimFromMake(String generatedDirPath) throws Exception {
+	public static String readDimFromMake(String folderName) throws Exception {
 		String dim = "(1,1)";
 		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier");
 		//create a folder with the input qualifier under the output path. This is needed because RISE expects the zip to have a folder
 		//and for this folder we are using the input qualifier
-		File f = new File(generatedDirPath + "/" + fileName + "/" + fileName + ".ma");
+		File f = new File(folderName + "/" + fileName + "/" + fileName + ".ma");
 		FileReader reader = new FileReader(f);
 		List<String> lines = IOUtils.readLines(reader);
 		for (String line : lines) {
@@ -248,8 +250,55 @@ public class FileManagement {
 		writer(input, newPal);
 	}
 
-	public static void editStartingValues(String dimClause) {
-
+	public static void editStartingValues(String dimClause, String folderName, int numberOfOccupants) {
+		String[] coords = dimClause.substring(1, dimClause.length()-1).split(",");
+		String valuesFileFullyQualifiedName = folderName+"/"+PropertiesFile.getInstance().getProperty("input_qualifier")+"/"+PropertiesFile.getInstance().getProperty("input_qualifier")+".stvalues";
+		File valuesFile = new File(valuesFileFullyQualifiedName);
+		OutputStream os = null;
+		try {
+			FileInputStream is = new FileInputStream(valuesFile);
+			
+			List<String> lines = IOUtils.readLines(is, "CP1252");
+			
+			
+			os = new FileOutputStream(valuesFile);
+			HashMap<String, Integer> mapOfCoords = new HashMap<String, Integer>();
+			
+			for(int i=0; i<lines.size();i++) {
+				int equalityIndex = lines.get(i).indexOf("=");
+				String coordPart = null;
+				if(equalityIndex != -1)
+					coordPart =lines.get(i).substring(0,equalityIndex).trim();
+				else 
+					coordPart =lines.get(i);
+				os.write(lines.get(i).getBytes());
+				os.write("\r\n".getBytes());
+				mapOfCoords.put(coordPart, 1);
+			}
+			int xCoord = Integer.parseInt(coords[0]);
+			int yCoord = Integer.parseInt(coords[1]);
+			
+			Random xRandomizer = new Random();
+			Random yRandomizer = new Random();
+			
+			for (int i=0; i<numberOfOccupants;i++) {
+				
+				String s = null;
+				do {
+					s = "("+xRandomizer.nextInt(xCoord) + ", "+yRandomizer.nextInt(yCoord)+")";
+				}while(mapOfCoords.containsKey(s));
+				
+				s+= "= 500 -200 -1 \r\n"; 
+				os.write(s.getBytes());
+			}
+		
+		} catch(Exception e) {
+			e.printStackTrace();
+		}finally{
+			if(os != null) try {os.close();}catch(Exception e) {}
+		}
+		
+		
 	}
 
 	/**
