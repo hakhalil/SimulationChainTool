@@ -5,8 +5,15 @@ import java.io.File;
 import org.apache.commons.io.IOUtils;
 
 public class RunProcess {
-	public static int runCDGenerator(int numOfCells) {
-		String inputFile = FileManagement.getCDInputFileName();
+	
+	/**
+	 * Run the Python script that generates a model from an image or a revit file
+	 * @param numOfCells - how big do we want the model (based on real size of the room
+	 * represented by the inptu file)
+	 * @param inputFile - the image or the revit file
+	 * @return
+	 */
+	public static int runCDGenerator(int numOfCells, String inputFile) {
 		int returnVal = 0;
 		if(inputFile != null) {
 			
@@ -14,15 +21,17 @@ public class RunProcess {
 			String cmdLine = "Python ";
 			
 			//providing the script name to run
-			cmdLine+= PropertiesFile.getSystemRoot()+"cell/co2_cd_generator.py ";
+			cmdLine+= FileManagement.getFullyQualifiedFileName("cell")+"/co2_cd_generator.py ";
 			
-			String cellsPath = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
+			String cellsPath = FileManagement.getOutputFolderName();
 			//parameters to the script
-			cmdLine += "-i " + cellsPath+"/"+inputFile + " -o " + cellsPath+"/" +PropertiesFile.getInstance().getProperty("output_qualifier") + " -w " + numOfCells;
-			cmdLine += " -r "+ PropertiesFile.getSystemRoot()+"cell/co2_rules.txt -bv 500";
+			cmdLine += "-i " + cellsPath+"/"+inputFile + " -o " + FileManagement.getGeneratorOutputFolder() + " -w " + numOfCells;
+			cmdLine += " -r "+ FileManagement.getFullyQualifiedFileName("cell")+"/co2_rules.txt -bv 500";
 			try {
 				Runtime runtime = Runtime.getRuntime();
-		        Process process = runtime.exec(cmdLine, null, new File(PropertiesFile.getSystemRoot()+"cell"));
+		        
+				//running the command line in the home directory of the script. Otherwise the script did not run properly
+				Process process = runtime.exec(cmdLine, null, new File(FileManagement.getFullyQualifiedFileName("cell")));
 		        process.waitFor();
 		        returnVal = process.exitValue();
 		        System.out.println("Python finished with the message - "+IOUtils.toString(process.getErrorStream(), "UTF-8"));
@@ -40,13 +49,13 @@ public class RunProcess {
 		
 		String framework = PropertiesFile.getInstance().getProperty("RISE_frameworkname");
 		//first delete previous framework
-		client.DeleteFramework(framework);
+		client.deleteFramework(framework);
 		
-		int retVal = client.PutXMLFile( framework, fileName);
+		int retVal = client.putXMLFile( framework, fileName);
 		if(retVal >= 200 && retVal <=202) {
-			retVal = client.PostZipFile(framework+"?zdir=in", fileName);
+			retVal = client.postZipFile(framework+"?zdir=in", fileName);
 			if(retVal >= 200 && retVal <=202)
-				retVal = client.PutFramework(framework+"/simulation");
+				retVal = client.runSimulation(framework+"/simulation");
 		}
 		return (retVal >= 200 && retVal <=202);
 	}

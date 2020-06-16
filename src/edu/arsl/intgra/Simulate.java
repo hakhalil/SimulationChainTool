@@ -1,6 +1,5 @@
 package edu.arsl.intgra;
 
-import java.io.File;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -29,8 +28,12 @@ public class Simulate extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + PropertiesFile.getInstance().getProperty("RISE_frameworkname")+"/results";
-		String filePath = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
+		String filePath = FileManagement.getOutputFolderName();
+		
+		//download the results file from RISE
 		FileManagement.downloadFile(uri, filePath+"/result.zip");
+		
+		//RISE returns a Zipped file which we will unzip to get directly the log file
 		FileManagement.extractZip(filePath+"/result.zip", filePath);
 		request.getRequestDispatcher( "simulation.jsp").forward(request, response);
 	}
@@ -39,16 +42,18 @@ public class Simulate extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String rootFolderForGeneratedFiles = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
-		String folderInZip = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("input_qualifier");
-		String conversionToolOutputFolder = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("output_qualifier");
+		String rootFolderForGeneratedFiles = FileManagement.getOutputFolderName();
+		String zipFileName = rootFolderForGeneratedFiles + "/" + PropertiesFile.getInstance().getProperty("input_qualifier")+".zip";
 		
 		String strOccupants = request.getParameter("occupants");
 		String closeWindow = request.getParameter("closed");
 		String nextPageURL = "simulation.jsp";
 		try {
-			prepareFilesForRise(conversionToolOutputFolder, Integer.parseInt(strOccupants), closeWindow);
-			zipModel(folderInZip, conversionToolOutputFolder);
+			prepareFilesForRise(Integer.parseInt(strOccupants), closeWindow);
+			String folderToZip = FileManagement.getGeneratorOutputFolder();
+			
+			//RISE expects the makefile, pal and values files to be zipped
+			zipModel(zipFileName, folderToZip);
 			
 			if(RunProcess.callRISE()) {
 				request.setAttribute("NotGen", "0");
@@ -62,32 +67,38 @@ public class Simulate extends HttpServlet {
 		request.getRequestDispatcher(nextPageURL).forward(request, response);
 	}
 
-	private boolean zipModel(String zipFileBaseName, String outputFolder) throws Exception {
-		
-		File generatedDir = new File(outputFolder);
+	private boolean zipModel(String zipFileName, String folderToCompress) throws Exception {
 		
 		//the output of the generation tool must exist before we attempt to zip it
-		if(generatedDir.exists() && generatedDir.isDirectory() && 
-				generatedDir.list() != null && generatedDir.list().length > 0) {
-			String zipFileName = zipFileBaseName +".zip";
-			FileManagement.compress(outputFolder, zipFileName);
+		if(FileManagement.checkFolder(folderToCompress)) {
+			FileManagement.compressFolder(folderToCompress, zipFileName);
 			return true;
 		}
 		else return false;
 	}
 	
-	private void prepareFilesForRise(String folderName, int numberOfOccupants, String closeWindow) throws Exception{
+	/**
+	 * Some editing is done on the file before sending to RISE to accommodate the changes 
+	 * that the user requested through their input in the application. 
+	 * @param numberOfOccupants
+	 * @param closeWindow
+	 * @throws Exception
+	 */
+	private void prepareFilesForRise(int numberOfOccupants, String closeWindow) throws Exception{
+		
 		boolean isWindowClosed = (closeWindow!= null) && (closeWindow.equals("on"));
-		String dimClause = FileManagement.manipluateMakeFile(folderName, isWindowClosed);
+		
+		//edit rules based on whether the windows are opened or not
+		String dimClause = FileManagement.manipluateMakeFile(isWindowClosed);
 		
 		//add dimensions, as per make file, to the XML template file and add the update file to the output folder
 		FileManagement.editXML(dimClause);
 		
-		//generated Pal is not complete we overwrite with a templated pal
+		//generated Pal is not complete so we overwrite it with a templated pal
 		FileManagement.overwritePal();
 		
-		//add occupants
-		FileManagement.editStartingValues(dimClause, folderName, numberOfOccupants);
+		//add occupants to the initial values
+		FileManagement.addOccupantsToValues(dimClause, numberOfOccupants);
 	}
 	
 

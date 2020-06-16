@@ -66,7 +66,7 @@ public class FileManagement {
 	 */
 	static boolean checkFolder(String folderName) {
 
-		File defaultDir = fullyQualifyFolder(folderName);
+		File defaultDir = new File(folderName);
 
 		// The file has to exist and is a directory (Not just a child file)
 		return (defaultDir.exists() && defaultDir.isDirectory());
@@ -83,31 +83,17 @@ public class FileManagement {
 	public static boolean writeFile(String filedName, InputStream fileContent) {
 		boolean success = false;
 		try {
+			File localFile = new File(getOutputFolderName() + "/" + filedName);
 
-			String default_folder = PropertiesFile.getInstance().getProperty("default_folder");
-			initializeFolder(default_folder);
-			File localFile = new File(PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/" + filedName);
-
+			//writing the inputstream to the file
 			writer(fileContent, localFile);
-
 			success = true;
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			success = false;
 		}
 		return success;
-	}
-
-	public static String getCDInputFileName() {
-		String path = PropertiesFile.getInstance().getGenerationFolderWithFullPath();
-		File f = new File(path);
-		String[] listOfFiles = f.list();
-		for (int i = 0; i < listOfFiles.length; i++) {
-			if (listOfFiles[i].trim().startsWith(PropertiesFile.getInstance().getProperty("input_qualifier")))
-				return listOfFiles[i];
-		}
-
-		return null;
 	}
 
 	private static void writer(InputStream inputStream, File outputFile) throws IOException {
@@ -130,21 +116,49 @@ public class FileManagement {
 			}
 		}
 	}
-	private static void initializeFolder(String folderName) {
+	
+	/**
+	 * Checks if the output folder for the application exists or not. If not, creat it.
+	 * If exits, delete all files and subfolder to have a clean start
+	 */
+	public static void initializeOutputFolder() {
+		String default_folder = PropertiesFile.getInstance().getProperty("default_folder");
+		
 		// The file has to exist and is a directory (Not just a child file)
-		File defaultDir = fullyQualifyFolder(folderName);
-		if (!checkFolder(folderName)) {
+		String fullQualifiedFolderName = getFullyQualifiedFileName(default_folder);
+		File defaultDir = new File(fullQualifiedFolderName);
+		if (!checkFolder(fullQualifiedFolderName)) {
 			defaultDir.mkdir();
 		} else
 			deleteFolderRecursively(defaultDir);
 	}
+	
+	/**
+	 * Downloads a file from a given URI
+	 * @param uri
+	 * @param fileName
+	 */
+	public static void downloadFile(String uri, String fileName) {
 
-	public static File fullyQualifyFolder(String folderName) {
-		String systemRoot = PropertiesFile.getSystemRoot();
-		File defaultDir = new File(systemRoot + folderName);
-
-		return defaultDir;
+		try (BufferedInputStream in = new BufferedInputStream(new URL(uri).openStream());
+				FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
+			IOUtils.copy(in, fileOutputStream);
+			in.close();
+			fileOutputStream.flush();
+			fileOutputStream.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
+
+	/**
+	 * *************************************************************
+	 * *************************************************************
+	 * ********  CDGeneration output file editing methods   ********
+	 * *************************************************************
+	 * *************************************************************
+	 * 
+	 */
 
 	/**
 	 * Read the dimensions of the model as well as change the status of the windows if required
@@ -152,23 +166,29 @@ public class FileManagement {
 	 * @return
 	 * @throws Exception
 	 */
-	public static String manipluateMakeFile(String folderName, boolean closeWindow) throws Exception {
+	public static String manipluateMakeFile(boolean closeWindow) throws Exception {
 		String dim = "(1,1)";
-		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier");
+		String makeFileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ Constants.MAKE_FILE_EXTENSION;
 		
 		//create a folder with the input qualifier under the output path. This is needed because RISE expects the zip to have a folder
 		//and for this folder we are using the input qualifier
-		File f = new File(folderName + "/" + fileName + "/" + fileName + ".ma");
+		File f = new File(getRISEInputFolder() + "/" + makeFileName );
 				
 		List<String> lines = IOUtils.readLines(new FileInputStream(f), "CP1252");
 		
 		FileOutputStream os = new FileOutputStream(f);
 		for (String line : lines) {
-			if (line.startsWith("dim")) {
+			
+			//if this line shows the dimensions of the model, update it based
+			//on the room width entered by the user
+			if (line.startsWith(Constants.DIMENSION_CLAUSE)) {
 				dim = line.substring(line.indexOf(":") + 1).trim();
 				//break;
 			}
-			if(!line.endsWith("{ $type = -500 }") || !closeWindow){
+			
+			//only write the line if it is not the windows rule or if it is the window rule but the
+			//window is not closed
+			if(!line.endsWith(Constants.WINDOW_RULE) || !closeWindow){
 				os.write(line.getBytes());
 				os.write("\r\n".getBytes());
 			}
@@ -185,12 +205,10 @@ public class FileManagement {
 	 * @throws Exception
 	 */
 	public static void editXML(String dim) throws Exception {
-		String xmlFilePath = PropertiesFile.getSystemRoot();
-
 		DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = builderFactory.newDocumentBuilder();
 		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ ".xml";
-		Document xmlDocument = builder.parse(new File(xmlFilePath + fileName ));
+		Document xmlDocument = builder.parse(new File(getFullyQualifiedFileName(fileName)));
 
 		/*
 		 * String expression = "ConfigFramework/DCDpp/Servers/Server/Zone"; XPath xPath
@@ -205,12 +223,106 @@ public class FileManagement {
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
 		Transformer transformer = transformerFactory.newTransformer();
 		DOMSource domSource = new DOMSource(xmlDocument);
-		String s = PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/" + fileName;
+		String s = getOutputFolderName() + "/" + fileName;
 		StreamResult streamResult = new StreamResult(new File(s));
 		transformer.transform(domSource, streamResult);
 
 	}
+	
+	/**
+	 * The generation tool outputs a palette which does not account to vents, doors or windows. 
+	 * Since the palette is constant, we overwrite the generated output with a templated one
+	 * @throws Exception
+	 */
+	public static void overwritePal() throws Exception {
 
+		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ Constants.PALETTE_FILE_EXTENSION;
+		File templateFile = new File(getFullyQualifiedFileName("cell") +"/" + fileName );
+
+		File newPal = new File(getRISEInputFolder()+"/" + fileName );
+
+		FileInputStream input = new FileInputStream(templateFile);
+		writer(input, newPal);
+	}
+
+	/**
+	 * Randomly add occupants in non-obstacle space in the model
+	 * @param dimClause - size of the model to know the boundaries of where to put the occupants
+	 * @param numberOfOccupants - number of occupants to insert
+	 */
+	public static void addOccupantsToValues(String dimClause, int numberOfOccupants) {
+		String[] coords = dimClause.substring(1, dimClause.length()-1).split(",");
+		String valuesFileName = getRISEInputFolder()+"/"+PropertiesFile.getInstance().getProperty("input_qualifier")+ Constants.VALUES_FILE_EXTENSION;
+		File valuesFile = new File(valuesFileName);
+		OutputStream os = null;
+		try {
+			FileInputStream is = new FileInputStream(valuesFile);
+			
+			List<String> lines = IOUtils.readLines(is, "CP1252");
+			
+			
+			os = new FileOutputStream(valuesFile);
+			
+			//save all existing coordinates. Coordinates that do not exist can host an occupant
+			//Hashmap provides a quick search
+			HashMap<String, Integer> mapOfCoords = new HashMap<String, Integer>();
+			
+			//re-writing the file (line by line) and storing the coordinates on each line as we go
+			for(int i=0; i<lines.size();i++) {
+				int equalityIndex = lines.get(i).indexOf("=");
+				String coordPart = null;
+				if(equalityIndex != -1)
+					coordPart =lines.get(i).substring(0,equalityIndex).trim();
+				else 
+					coordPart =lines.get(i);
+				os.write(lines.get(i).getBytes());
+				os.write("\r\n".getBytes());
+				mapOfCoords.put(coordPart, 1);
+			}
+			
+			//start randomizing coordiantes then check if they exist. If they don't add an occupant there
+			int xCoord = Integer.parseInt(coords[0]);
+			int yCoord = Integer.parseInt(coords[1]);
+			
+			Random xRandomizer = new Random();
+			Random yRandomizer = new Random();
+			
+			for (int i=0; i<numberOfOccupants;i++) {
+				
+				String s = null;
+				//will keep generate random coordinate until one is found that does not already exist. 
+				do {
+					s = "("+xRandomizer.nextInt(xCoord) + ", "+yRandomizer.nextInt(yCoord)+")";
+				}while(mapOfCoords.containsKey(s));
+				
+				s+= "= 500 -200 -1 \r\n"; 
+				os.write(s.getBytes());
+			}
+		
+		} catch(Exception e) {
+			e.printStackTrace();
+		}finally{
+			if(os != null) try {os.close();}catch(Exception e) {}
+		}
+	}
+
+	
+	/**
+	 * *************************************************************
+	 * *************************************************************
+	 * *****************  Zip helper methods   ******************
+	 * *************************************************************
+	 * *************************************************************
+	 * 
+	 */
+	
+	/**
+	 * Extracts a filename (with its parent) based on the folder name being zipped
+	 * @param source
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 */
 	private static String getEntryName(File source, File file) throws IOException {
 		int index = source.getAbsolutePath().length() + 1;
 		String path = file.getCanonicalPath();
@@ -224,7 +336,7 @@ public class FileManagement {
 	 * @param zipFileName
 	 * @throws Exception
 	 */
-	public static void compress(String dirPath, String zipFileName) throws Exception {
+	public static void compressFolder(String dirPath, String zipFileName) throws Exception {
 		File destination = new File(zipFileName);
 		File source = new File(dirPath);
 		OutputStream archiveStream = new FileOutputStream(destination);
@@ -250,104 +362,17 @@ public class FileManagement {
 		archiveStream.close();
 	}
 
-	/**
-	 * The generation tool outputs a palette which does not account to vents, doors or windows. 
-	 * Since the palette is constant, we overwrite the generated output with a templated one
-	 * @throws Exception
-	 */
-	public static void overwritePal() throws Exception {
-
-		String palFilePath = PropertiesFile.getSystemRoot();
-
-		String fileName = PropertiesFile.getInstance().getProperty("input_qualifier")+ ".pal";
-		File templateFile = new File(palFilePath + "/cell/" + fileName );
-
-		File newPal = new File(
-				PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/out/in/" + fileName );
-
-		FileInputStream input = new FileInputStream(templateFile);
-		writer(input, newPal);
-	}
-
-	public static void editStartingValues(String dimClause, String folderName, int numberOfOccupants) {
-		String[] coords = dimClause.substring(1, dimClause.length()-1).split(",");
-		String valuesFileFullyQualifiedName = folderName+"/"+PropertiesFile.getInstance().getProperty("input_qualifier")+"/"+PropertiesFile.getInstance().getProperty("input_qualifier")+".stvalues";
-		File valuesFile = new File(valuesFileFullyQualifiedName);
-		OutputStream os = null;
-		try {
-			FileInputStream is = new FileInputStream(valuesFile);
-			
-			List<String> lines = IOUtils.readLines(is, "CP1252");
-			
-			
-			os = new FileOutputStream(valuesFile);
-			HashMap<String, Integer> mapOfCoords = new HashMap<String, Integer>();
-			
-			for(int i=0; i<lines.size();i++) {
-				int equalityIndex = lines.get(i).indexOf("=");
-				String coordPart = null;
-				if(equalityIndex != -1)
-					coordPart =lines.get(i).substring(0,equalityIndex).trim();
-				else 
-					coordPart =lines.get(i);
-				os.write(lines.get(i).getBytes());
-				os.write("\r\n".getBytes());
-				mapOfCoords.put(coordPart, 1);
-			}
-			int xCoord = Integer.parseInt(coords[0]);
-			int yCoord = Integer.parseInt(coords[1]);
-			
-			Random xRandomizer = new Random();
-			Random yRandomizer = new Random();
-			
-			for (int i=0; i<numberOfOccupants;i++) {
-				
-				String s = null;
-				do {
-					s = "("+xRandomizer.nextInt(xCoord) + ", "+yRandomizer.nextInt(yCoord)+")";
-				}while(mapOfCoords.containsKey(s));
-				
-				s+= "= 500 -200 -1 \r\n"; 
-				os.write(s.getBytes());
-			}
-		
-		} catch(Exception e) {
-			e.printStackTrace();
-		}finally{
-			if(os != null) try {os.close();}catch(Exception e) {}
-		}
-		
-		
-	}
-
-	/**
-	 * Downloads a file from a given URI
-	 * @param uri
-	 * @param fileName
-	 */
-	public static void downloadFile(String uri, String fileName) {
-
-		try (BufferedInputStream in = new BufferedInputStream(new URL(uri).openStream());
-				FileOutputStream fileOutputStream = new FileOutputStream(fileName)) {
-			IOUtils.copy(in, fileOutputStream);
-			in.close();
-			fileOutputStream.flush();
-			fileOutputStream.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
 	/**
 	 * Extracting content of a zip archive to the current location
+	 * This method is customized to extract a log file out of the result zip that comes back from RISE
 	 * @param archiveFile
 	 * @param destinationPath
 	 */
 	public static void extractZip(String archiveFile, String destinationPath) {
 		File targetDir = new File(destinationPath);
 		try (InputStream is = new FileInputStream(new File(archiveFile));
-				ArchiveInputStream i = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP,
-						is);) {
+				ArchiveInputStream i = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP, is);) {
 			ArchiveEntry entry = null;
 			while ((entry = i.getNextEntry()) != null) {
 				if (!i.canReadEntryData(entry)) {
@@ -357,7 +382,7 @@ public class FileManagement {
 				
 				
 				if (entry.isDirectory()) {
-					// ignore dirs
+					// ignore dirs as we don't want to extract any directories (non will exist in this case)
 				} else {
 					//no point in unzipping empty files
 					if(entry.getSize() > 0) {
@@ -378,4 +403,47 @@ public class FileManagement {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * *************************************************************
+	 * *************************************************************
+	 * **************  Common folders helper methods   *************
+	 * *************************************************************
+	 * *************************************************************
+	 * 
+	 */
+	/**
+	 * Get folder name that has the output of this application
+	 * @return
+	 */
+	public static String getOutputFolderName() {
+		return PropertiesFile.getSystemRoot()+PropertiesFile.getInstance().getProperty("default_folder");
+	}
+	
+	/** 
+	 * Add system path to the filename in order to get a fully qualified name
+	 * @param FileName
+	 * @return
+	 */
+	public static String getFullyQualifiedFileName(String FileName) {
+		String systemRoot = PropertiesFile.getSystemRoot();
+		return systemRoot + FileName;
+	}
+	
+	/**
+	 * returns the folder where the output of the CDGenerator is written
+	 * @return
+	 */
+	public static String getGeneratorOutputFolder() {
+		return getOutputFolderName() + "/" + PropertiesFile.getInstance().getProperty("output_qualifier");
+	}
+	
+
+	/** 
+	 * returns the folder that would be zipped and sent to RISE as input
+	 * @return
+	 */
+	public static String getRISEInputFolder() {
+		return getGeneratorOutputFolder()  + "/" + PropertiesFile.getInstance().getProperty("input_qualifier");
+	}	
 }

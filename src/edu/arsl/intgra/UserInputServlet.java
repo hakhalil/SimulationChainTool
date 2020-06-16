@@ -52,9 +52,17 @@ public class UserInputServlet extends HttpServlet {
 			//first get the file
 			Part uploadedFile = request.getPart("file");
 			
+			//check that the output folder exits and clear it for a fresh start
+			FileManagement.initializeOutputFolder();
+			
+			String uploadFileName = Paths.get(uploadedFile.getSubmittedFileName()).getFileName().toString(); 
+			uploadFileName = getPropertlyFormatedFileName(uploadedFile);
+			
+			String fileNameOnServer = getFileNameOnServer(uploadedFile, uploadFileName);
+			
 			//attempt to write the file to the file system. If all is OK, proceed with the rest of the processing
 			//otherwise go back with error message
-			if(!writeFilePartToServer(uploadedFile)) {
+			if(!saveFilePartToServer(uploadedFile, uploadFileName, fileNameOnServer)) {
 				request.setAttribute("WrongFile", "1");
 				nextPageURL = "start.jsp";
 			} else {
@@ -65,8 +73,8 @@ public class UserInputServlet extends HttpServlet {
 				int numOfCells = calculateCells(roomWidth);
 				request.setAttribute("CellSize", numOfCells);
 				
-				RunProcess.runCDGenerator(numOfCells);
-				if(FileManagement.checkFolder(PropertiesFile.getInstance().getProperty("default_folder"))) {
+				RunProcess.runCDGenerator(numOfCells, fileNameOnServer);
+				if(FileManagement.checkFolder(FileManagement.getGeneratorOutputFolder())) {
 					request.setAttribute("NotGen", "0");
 				}
 			}
@@ -90,26 +98,25 @@ public class UserInputServlet extends HttpServlet {
 	}
 
 	/**
-	 * Writes the file on the request to the file system
+	 * Writes the file on the request to the server file system
 	 * @param filePart
 	 */
-	private boolean writeFilePartToServer(Part filePart) {
+	private boolean saveFilePartToServer(Part filePart, String uploadedFileName, String filenameOnServer) {
 		boolean returnValue = false;
-		String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString(); 
-		fileName = getPropertlyFormatedFileName(filePart);
+		
 		
 		//we only want to work with acceptable extensions
-		boolean validType = FileManagement.checkFileType(fileName);
+		boolean validType = FileManagement.checkFileType(uploadedFileName);
 
 		if (validType) {
 			try {
 
-				String fileNameOnServer = PropertiesFile.getInstance().getProperty("input_qualifier");
+				String fileNameOnServer = getFileNameOnServer(filePart, uploadedFileName);
 
 				InputStream fileContent = filePart.getInputStream();
 				//rename the file name on server to use the input qualifier but keep the extension
-				FileManagement.writeFile(fileNameOnServer + fileName.substring(fileName.length() - 4, fileName.length()), fileContent);
-				returnValue = true;
+				returnValue = FileManagement.writeFile(fileNameOnServer, fileContent);
+				
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -117,6 +124,11 @@ public class UserInputServlet extends HttpServlet {
 		return returnValue;
 	}
 
+	/** 
+	 * get room width and based on it calculate the number of cells in the model
+	 * @param roomWidth
+	 * @return
+	 */
 	private int calculateCells(String roomWidth) {
 
 		String default_cell_size = PropertiesFile.getInstance().getProperty("default_cell_size");
@@ -124,6 +136,17 @@ public class UserInputServlet extends HttpServlet {
 		return Integer.parseInt(default_cell_size) * Integer.parseInt(roomWidth);
 	}
 	
-	
+	/**
+	 * Generate the name of the image (or REVIT) on the server using the uploaded extension as
+	 * well as the default names for the application
+	 * @param filePart
+	 * @param uploadedFileName
+	 * @return
+	 */
+	private String getFileNameOnServer(Part filePart, String uploadedFileName) {
+		String fileNameOnServer = PropertiesFile.getInstance().getProperty("input_qualifier");
+		fileNameOnServer += uploadedFileName.substring(uploadedFileName.length() - 4, uploadedFileName.length());
+		return fileNameOnServer;
+	}
 	
 }

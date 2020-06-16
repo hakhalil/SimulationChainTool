@@ -20,57 +20,42 @@ import org.restlet.resource.Representation;
 
 public class RiseClient {
 
-	public int PostZipFile( String frameworkName, final String filename) {
+	public int postZipFile( String frameworkName, final String filename) {
 		OutputRepresentation outfile = new OutputRepresentation(MediaType.APPLICATION_ZIP) {
 			public void write(OutputStream stream) throws IOException {
-				byte[] outfile = getBytesFromFile(new File(PropertiesFile.getInstance().getGenerationFolderWithFullPath() +"/"+filename+".zip"));
+				byte[] outfile = getBytesFromFile(new File(FileManagement.getOutputFolderName() +"/"+filename+".zip"));
 				stream.write(outfile);
 			}
 		};
 		String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
-		Request request = getAuthenticatedRequest(Method.POST, uri);
-		request.setEntity((Representation) outfile);
-		Response resp = (new Client(Protocol.HTTP)).handle(request);
-		System.out.println(resp.getStatus());
-		System.out.println(resp.getEntity());
-		int retVal = resp.getStatus().getCode();
+		int retVal = executeRESTRequest(Method.POST, uri, (Representation)outfile);
 		return retVal;
 	}
 
-	public int PutXMLFile( String frameworkName, String filename) {
-		File file = new File(PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/"+filename+".xml");
+	public int putXMLFile( String frameworkName, String filename) {
+		String fullQualifiedXMLFileName = FileManagement.getOutputFolderName() + "/"+filename+".xml";
+		File file = new File(fullQualifiedXMLFileName);
 		int retVal = 200;
 		if (file.exists()) {
-			FileRepresentation outfile = new FileRepresentation(PropertiesFile.getInstance().getGenerationFolderWithFullPath() + "/"+filename+".xml", MediaType.TEXT_XML);
+			FileRepresentation outfile = new FileRepresentation(FileManagement.getOutputFolderName() + "/"+filename+".xml", MediaType.TEXT_XML);
 			String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
-			Request request = getAuthenticatedRequest(Method.PUT, uri);
-			request.setEntity((Representation) outfile);
-			Response resp = (new Client(Protocol.HTTP)).handle(request);
-			System.out.println(resp.getStatus());
-			System.out.println(resp.getEntity());
-			retVal = resp.getStatus().getCode();
+			retVal = executeRESTRequest(Method.PUT, uri, outfile);
 		} else {
 			System.out.println("Couldn't find file " + file.getName());
 		}
 		return retVal;
 	}
 	
-	 public  int PutFramework( String frameworkName) {
+	 public  int runSimulation( String frameworkName) {
 		    String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
-		    Request request = getAuthenticatedRequest(Method.PUT, uri);
-		    Response resp = (new Client(Protocol.HTTP)).handle(request);
-		    System.out.println(resp.getStatus());
-		    System.out.println(resp.getEntity());
-		    int retVal = resp.getStatus().getCode();
+		    int retVal = executeRESTRequest(Method.PUT, uri, null);
 		    return retVal;
 		  }
 
-	 public  int DeleteFramework( String frameworkName) {
+	 public  int deleteFramework( String frameworkName) {
 		    String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
-		    Request request = getAuthenticatedRequest(Method.DELETE, uri);
-		    Response resp = (new Client(Protocol.HTTP)).handle(request);
-		    int retVal = resp.getStatus().getCode();
-		    System.out.println(resp.getStatus() + " : " + resp.getLocationRef());
+		    int retVal = executeRESTRequest(Method.DELETE, uri, null);
+		   
 		    return retVal;
 		  }
 	public byte[] getBytesFromFile(File file) throws IOException {
@@ -91,10 +76,15 @@ public class RiseClient {
 		return bytes;
 	}
 
-	public Request getAuthenticatedRequest(Method method, String uri) {
+	private int executeRESTRequest(Method method, String uri, Representation entity ) {
 		Request request = new Request(method, uri);
 		request.setChallengeResponse(new ChallengeResponse(ChallengeScheme.HTTP_BASIC, PropertiesFile.getInstance().getProperty("RISE_usrname"), 
 					PropertiesFile.getInstance().getProperty("RISE_passwd")));
-		return request;
+		if(entity != null)
+			request.setEntity((Representation) entity);
+		Response resp = (new Client(Protocol.HTTP)).handle(request);
+	    System.out.println(resp.getStatus());
+	    System.out.println(resp.getEntity());
+	    return  resp.getStatus().getCode();
 	}
 }
