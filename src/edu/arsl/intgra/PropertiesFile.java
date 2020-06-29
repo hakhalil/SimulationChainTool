@@ -3,6 +3,9 @@ package edu.arsl.intgra;
 import java.io.FileReader;
 import java.util.Properties;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * File to manage the reading/writing of the config file
  * This is a singlton wihtin the system
@@ -14,6 +17,8 @@ public class PropertiesFile {
 	Properties properties = null;
 	static PropertiesFile _instance = null;
 	static String systemRoot = null;
+	
+	final static Logger log = LogManager.getLogger(PropertiesFile.class);
 
 	/**
 	 * Private constructor to allow only for the initializing method to create the class
@@ -36,7 +41,7 @@ public class PropertiesFile {
 			systemRoot = path.substring(1, path.length());
 				
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.fatal("Failed to create properties file", e);
 		}
 	}
 	

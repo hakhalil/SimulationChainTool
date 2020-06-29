@@ -12,6 +12,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Servlet implementation class UserInputServlet
  */
@@ -19,6 +22,7 @@ import javax.servlet.http.Part;
 @MultipartConfig
 public class UserInputServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+	final static Logger log = LogManager.getLogger("FileManagement");
 
 	/**
 	 * Default constructor.
@@ -118,7 +122,7 @@ public class UserInputServlet extends HttpServlet {
 				returnValue = FileManagement.writeFile(fileNameOnServer, fileContent);
 				
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.fatal("Failed to write the uploaded file to server", e);
 			}
 		}
 		return returnValue;

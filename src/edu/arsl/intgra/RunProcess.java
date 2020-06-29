@@ -3,8 +3,12 @@ package edu.arsl.intgra;
 import java.io.File;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class RunProcess {
+	
+	final static Logger log = LogManager.getLogger(RunProcess.class);
 	
 	/**
 	 * Run the Python script that generates a model from an image or a revit file
@@ -18,7 +22,7 @@ public class RunProcess {
 		if(inputFile != null) {
 			
 			//Running a Python script. It is assumed that Python is intalled on the server and is in the path
-			String cmdLine = "Python ";
+			String cmdLine = "python ";
 			
 			//providing the script name to run
 			cmdLine+= FileManagement.getFullyQualifiedFileName("cell")+"/co2_cd_generator.py ";
@@ -34,9 +38,9 @@ public class RunProcess {
 				Process process = runtime.exec(cmdLine, null, new File(FileManagement.getFullyQualifiedFileName("cell")));
 		        process.waitFor();
 		        returnVal = process.exitValue();
-		        System.out.println("Python finished with the message - "+IOUtils.toString(process.getErrorStream(), "UTF-8"));
+		        log.info("Python finished with the message - "+IOUtils.toString(process.getErrorStream(), "UTF-8"));
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.fatal("Failed to run the Pythong command", e);
 			}
 			
 		}

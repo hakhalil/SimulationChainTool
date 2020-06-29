@@ -29,6 +29,8 @@ import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 
 /**
@@ -39,6 +41,7 @@ import org.w3c.dom.Document;
  */
 public class FileManagement {
 
+	final static Logger log = LogManager.getLogger(FileManagement.class);
 	/**
 	 * Checks that a file is of a given type. The method only relies on the
 	 * extension
@@ -90,7 +93,7 @@ public class FileManagement {
 			success = true;
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			log.fatal("Could not write file", e);
 			success = false;
 		}
 		return success;
@@ -112,7 +115,9 @@ public class FileManagement {
 			File[] files = file.listFiles();
 			for (int i = 0; files != null && i < files.length; i++) {
 				deleteFolderRecursively(files[i]);
-				files[i].delete();
+				boolean isDeleted = files[i].delete();
+				if(!isDeleted)
+					log.info("Could not delete file "+ files[i].getName());
 			}
 		}
 	}
@@ -128,7 +133,10 @@ public class FileManagement {
 		String fullQualifiedFolderName = getFullyQualifiedFileName(default_folder);
 		File defaultDir = new File(fullQualifiedFolderName);
 		if (!checkFolder(fullQualifiedFolderName)) {
-			defaultDir.mkdir();
+			boolean dirCreated = defaultDir.mkdir();
+			if(dirCreated == false) {
+				log.error("Could not create generation folder");
+			}
 		} else
 			deleteFolderRecursively(defaultDir);
 	}
@@ -147,7 +155,7 @@ public class FileManagement {
 			fileOutputStream.flush();
 			fileOutputStream.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.fatal("Failed while downloaidng the file", e);
 		}
 	}
 
@@ -300,7 +308,7 @@ public class FileManagement {
 			}
 		
 		} catch(Exception e) {
-			e.printStackTrace();
+			log.fatal("Failed while editing the values file", e);
 		}finally{
 			if(os != null) try {os.close();}catch(Exception e) {}
 		}
@@ -376,7 +384,7 @@ public class FileManagement {
 			ArchiveEntry entry = null;
 			while ((entry = i.getNextEntry()) != null) {
 				if (!i.canReadEntryData(entry)) {
-					System.out.println("entry cannot be read!!");
+					log.error("entry cannot be read!! " + entry.getName());
 					continue;
 				}
 				
@@ -400,7 +408,7 @@ public class FileManagement {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.fatal("Exception thrown while zipping", e);
 		}
 	}
 	

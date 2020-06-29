@@ -8,12 +8,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Servlet implementation class Simulate
  */
 @WebServlet("/simulate")
 public class Simulate extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+	final static Logger log = LogManager.getLogger(Simulate.class);
        
     /**
      * @see HttpServlet#HttpServlet()
@@ -60,7 +64,8 @@ public class Simulate extends HttpServlet {
 			} else throw new Exception("RISE did not work");
 			
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.fatal("An error happened while generating the folder or zipping the model", e);
+			
 			request.setAttribute("NotGen", "1");
 			nextPageURL = "ct.jsp";
 		}

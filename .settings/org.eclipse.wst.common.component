@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><project-modules id="moduleCoreId" project-version="1.5.0">
-    <wb-module deploy-name="IntegratedSimulation">
+    <wb-module deploy-name="SimulationChainTool">
         <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
-        <property name="context-root" value="IntegratedSimulation"/>
-        <property name="java-output-path" value="/IntegratedSimulation/build/classes"/>
+        <property name="java-output-path" value="/SimulationChainTool/build/classes"/>
+        <property name="context-root" value="simintgra"/>
     </wb-module>
 </project-modules>

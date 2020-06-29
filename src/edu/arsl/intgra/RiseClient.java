@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.restlet.Client;
 import org.restlet.data.ChallengeResponse;
 import org.restlet.data.ChallengeScheme;
@@ -19,6 +21,7 @@ import org.restlet.resource.OutputRepresentation;
 import org.restlet.resource.Representation;
 
 public class RiseClient {
+	final static Logger log = LogManager.getLogger(RiseClient.class);
 
 	public int postZipFile( String frameworkName, final String filename) {
 		OutputRepresentation outfile = new OutputRepresentation(MediaType.APPLICATION_ZIP) {
@@ -41,7 +44,7 @@ public class RiseClient {
 			String uri = PropertiesFile.getInstance().getProperty("RISE_uri") + frameworkName;
 			retVal = executeRESTRequest(Method.PUT, uri, outfile);
 		} else {
-			System.out.println("Couldn't find file " + file.getName());
+			log.error("Couldn't find file " + file.getName());
 		}
 		return retVal;
 	}
@@ -83,8 +86,8 @@ public class RiseClient {
 		if(entity != null)
 			request.setEntity((Representation) entity);
 		Response resp = (new Client(Protocol.HTTP)).handle(request);
-	    System.out.println(resp.getStatus());
-	    System.out.println(resp.getEntity());
+	    log.info(resp.getStatus());
+	    log.info(resp.getEntity());
 	    return  resp.getStatus().getCode();
 	}
 }
