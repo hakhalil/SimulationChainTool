@@ -110,14 +110,14 @@ public class FileManagement {
 
 	private static void deleteFolderRecursively(File file) {
 		if(!file.isDirectory()) {
-			file.delete();
+			boolean isDeleted = file.delete();
+			if(!isDeleted)
+				log.info("Could not delete file "+ file.getName());
 		} else {
 			File[] files = file.listFiles();
 			for (int i = 0; files != null && i < files.length; i++) {
 				deleteFolderRecursively(files[i]);
-				boolean isDeleted = files[i].delete();
-				if(!isDeleted)
-					log.info("Could not delete file "+ files[i].getName());
+				files[i].delete();
 			}
 		}
 	}
