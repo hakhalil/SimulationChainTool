@@ -22,7 +22,9 @@ public class RunProcess {
 		if(inputFile != null) {
 			
 			//Running a Python script. It is assumed that Python is intalled on the server and is in the path
-			String cmdLine = "python ";
+			String cmdLine = "python";
+			
+			cmdLine += PropertiesFile.getInstance().getPythonVersion()  + " ";
 			
 			//providing the script name to run
 			cmdLine+= FileManagement.getFullyQualifiedFileName("cell")+"/co2_cd_generator.py ";

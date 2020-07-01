@@ -25,6 +25,7 @@ public class PropertiesFile {
 	 */
 	private PropertiesFile() {
 		try {
+						
 			String path = PropertiesFile.class.getResource("").getPath();
 			
 			//Trying to offset the path to where WebContent folder is. The resource path is giving 
@@ -39,6 +40,8 @@ public class PropertiesFile {
 			properties.load(reader);
 			
 			systemRoot = path.substring(1, path.length());
+			if(isLinuxOrUnix())
+				systemRoot = "/" + systemRoot;
 				
 		} catch (Exception e) {
 			log.fatal("Failed to create properties file", e);
@@ -67,5 +70,14 @@ public class PropertiesFile {
 		return (properties != null) ? properties.getProperty(name) : null;
 	}
 	
+	
+	public boolean isLinuxOrUnix() {
+		String OS = System.getProperty("os.name").toLowerCase();
+		return (OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0 );
+	}
+	
+	public String getPythonVersion() {
+		return (isLinuxOrUnix()) ? getProperty("pythonver") : "";
+	}
 
 }

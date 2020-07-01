@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="debug" strict="true" name="XMLConfigTest"
+               packages="org.apache.logging.log4j.test">
+  <Properties>
+    <Property name="filename">simintgra.log</Property>
+  </Properties>
+  <Filter type="ThresholdFilter" level="trace"/>
+ 
+  <Appenders>
+    <Appender type="Console" name="STDOUT">
+      <Layout type="PatternLayout" pattern="%d{dd:MM:YY HH:mm:ss} [%t] %-5level %m %n"/>
+    </Appender>
+    <Appender type="File" name="File" fileName="${filename}" fileOwner="tomcat" fileGroup="tomcat">
+      <Layout type="PatternLayout">
+        <Pattern>%d{dd:MM:YY HH:mm:ss} [%t] %-5level %m%n</Pattern>
+      </Layout>
+    </Appender>
+  </Appenders>
+ 
+  <Loggers>
+ 
+ 
+    <Root level="trace">
+      <AppenderRef ref="File"/>
+      <AppenderRef ref="STDOUT"/>
+    </Root>
+  </Loggers>
+ 
+</Configuration>
