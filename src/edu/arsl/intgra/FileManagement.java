@@ -196,7 +196,10 @@ public class FileManagement {
 			
 			//only write the line if it is not the windows rule or if it is the window rule but the
 			//window is not closed
-			if(!line.endsWith(Constants.WINDOW_RULE) || !closeWindow){
+			if (line.endsWith(Constants.WINDOW_RULE) && closeWindow) {
+				os.write("rule : { ~c := $conc; ~ty := $type; } { $conc := -10; } 1000 { $type = -500 }".getBytes());
+				os.write("\r\n".getBytes());
+			} else {
 				os.write(line.getBytes());
 				os.write("\r\n".getBytes());
 			}
